@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Getting Started — Star Apps</title>
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="theme-color" content="#2A5D9F">
+<style>
+  :root {
+    --bg: #FDF6EC; --text: #2A3A50; --card: #FFFFFF; --card-shadow: rgba(42,58,80,.10);
+    --accent: #2A5D9F; --accent-soft: #E3EDF9; --green: #2E8B57; --green-soft: #DCEBDD;
+    --gold: #E8A013; --gold-soft: #FBEBC8; --muted: #6B7686; --eyebrow: #B0763A;
+    --body-text: #4A5568; --line: #EDE4D3; --warn: #B0763A; --warn-soft: #FBEBC8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font-family: 'Lexend', 'Trebuchet MS', 'Comic Sans MS', sans-serif;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 20px 60px; }
+  .eyebrow {
+    font-size: 13px; font-weight: 600; color: var(--eyebrow); letter-spacing: .12em;
+    text-transform: uppercase; text-align: center; margin-bottom: 10px;
+  }
+  h1 { margin: 0 0 8px; font-size: 34px; font-weight: 800; text-align: center; }
+  .sub {
+    text-align: center; color: var(--body-text); font-size: 16px; max-width: 500px;
+    margin: 0 auto 40px; line-height: 1.5;
+  }
+  .back {
+    display: block; text-align: center; margin-bottom: 28px; font-size: 14px;
+    color: var(--accent); text-decoration: none; font-weight: 600;
+  }
+  .back:hover { text-decoration: underline; }
+
+  section.block {
+    background: var(--card); border-radius: 20px; padding: 24px 24px 26px;
+    box-shadow: 0 2px 10px var(--card-shadow); border: 1px solid var(--line);
+    margin-bottom: 20px;
+  }
+  .block-head { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; }
+  .icon {
+    flex: none; width: 44px; height: 44px; border-radius: 12px; display: flex;
+    align-items: center; justify-content: center; font-size: 22px;
+  }
+  .icon.bookmark { background: var(--accent-soft); }
+  .icon.resources { background: var(--green-soft); }
+  .icon.warn { background: var(--warn-soft); }
+  .icon.math { background: var(--accent-soft); }
+  .icon.spelling { background: var(--gold-soft); }
+  .block-head h2 { margin: 0; font-size: 19px; font-weight: 800; }
+
+  .block p { line-height: 1.6; font-size: 15px; color: var(--body-text); margin: 0 0 10px; }
+  .block ol, .block ul { margin: 0 0 10px; padding-left: 22px; }
+  .block li { line-height: 1.6; font-size: 15px; color: var(--body-text); margin-bottom: 6px; }
+  .block p:last-child, .block ol:last-child, .block ul:last-child { margin-bottom: 0; }
+
+  .warn-box {
+    background: var(--warn-soft); border: 1px solid var(--gold); border-radius: 14px;
+    padding: 14px 16px; margin-top: 6px;
+  }
+  .warn-box p { margin: 0; color: var(--text); font-size: 14px; }
+
+  a.inline-link { color: var(--accent); font-weight: 600; text-decoration: none; }
+  a.inline-link:hover { text-decoration: underline; }
+
+  footer { text-align: center; margin-top: 44px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="./index.html">← Back to Star Apps</a>
+    <div class="eyebrow">Star Apps</div>
+    <h1>Getting Started</h1>
+    <p class="sub">A quick guide to setting up and using the site — takes about two minutes to read.</p>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="icon bookmark">📌</div>
+        <h2>Saving this site for easy access</h2>
+      </div>
+      <p>You only need to do this once. Pick whichever feels easiest:</p>
+      <ul>
+        <li><strong>Bookmark it.</strong> The simplest option — just bookmark this page in your browser like any other website.</li>
+        <li><strong>Add to Home Screen / Install.</strong> Most phone browsers offer an "Install" or "Add to Home Screen" option (usually in the share menu or browser menu). This adds an icon that opens the site full-screen, without browser bars — it looks and feels like a regular app.</li>
+      </ul>
+      <p>Either way, the icon or bookmark opens this same site — you'll still need internet access for that first tap to load it (see the note below).</p>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="icon spelling">⭐</div>
+        <h2>Getting started with Spelling Star</h2>
+      </div>
+      <ol>
+        <li>Open <strong>Spelling Star</strong> from the home page.</li>
+        <li>The first time on a device, you'll go through a short setup: a parent PIN, your child's name, and how you want scores displayed.</li>
+        <li>After setup finishes, you'll land on the child's home screen. Look for the small <strong>"Parent dashboard"</strong> link and tap it, then enter your PIN.</li>
+        <li>In the parent dashboard, go to <strong>Word lists</strong> to create a list, import one from a CSV (see Resources below), or edit words directly. This is also where you'll set the weekly schedule and other settings.</li>
+      </ol>
+      <p>You can always get back to the parent dashboard the same way later — PIN, then whatever you need to change.</p>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="icon math">🔢</div>
+        <h2>Getting started with Math Star</h2>
+      </div>
+      <ol>
+        <li>Open <strong>Math Star</strong> from the home page.</li>
+        <li>The first time on a device, you'll set a parent PIN, your child's name, and a starting grade level.</li>
+        <li>After setup finishes, you'll land on the child's home screen. Tap <strong>"Parent dashboard"</strong> and enter your PIN.</li>
+        <li>From there you can set up <strong>focus areas</strong> (which fact categories your child practices), adjust the schedule, and check progress.</li>
+      </ol>
+      <p>Same as Spelling Star — the "Parent dashboard" link is always there on the home screen whenever you need to make changes.</p>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="icon resources">📁</div>
+        <h2>Getting word lists and other files</h2>
+      </div>
+      <p>Visit the <a class="inline-link" href="./resources.html">Resources</a> page from the home screen. Tap any word list to download it as a CSV file to your device.</p>
+      <p>To use a downloaded list in Spelling Star: open the parent dashboard → <strong>Word lists</strong> → import CSV, then select the file you downloaded.</p>
+    </section>
+
+    <section class="block">
+      <div class="block-head">
+        <div class="icon warn">⚠️</div>
+        <h2>A word of caution: clearing your browser cache</h2>
+      </div>
+      <p>Both apps save everything — profiles, word lists, progress, settings — directly in your browser, on that one device. There's no cloud backup.</p>
+      <div class="warn-box">
+        <p><strong>Clearing your browsing data/cache (or "site data") for this site will erase that child's saved progress permanently.</strong> This can happen from a routine "clear browsing history" cleanup, a "free up storage" prompt, or resetting the browser. It cannot be undone.</p>
+      </div>
+      <p style="margin-top:10px">To protect against this: use each app's <strong>Export CSV</strong> feature in the parent dashboard regularly to keep an outside copy of results. If your device ever needs a fresh start, the CSV export is your record — the app itself has no way to bring old progress back once it's cleared.</p>
+    </section>
+
+    <footer>Questions or something not working? Check with whoever manages the Star Apps site.</footer>
+  </div>
+</body>
+</html>
