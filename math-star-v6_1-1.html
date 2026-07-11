@@ -1,0 +1,1590 @@
+<!DOCTYPE html>
+<!-- Math Star v6.1 — see APP_VERSION const in <script>; bump both together.
+     v6.1: Drill-mode neutrality fix — numDisplay's ok/bad border class was not
+     gated by isDrill, so a correct Drill answer got a green border while a
+     wrong one didn't (fb="wrong-locked" never matched "wrong"), leaking
+     correctness through the box color even though the feedback text was
+     unified. Comparison/numeric2 widgets were already neutral (no color at
+     all); only the plain numeric widget had this asymmetry. Mirrors the
+     explicit isTest-gated suppression Spelling Star v6.2 already used for
+     its #spellInput class. -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Star</title>
+<style>
+  :root {
+    --bg: #FDF6EC; --text: #2A3A50; --card: #FFFFFF; --card-shadow: rgba(42,58,80,.10);
+    --accent: #2A5D9F; --accent-soft: #E3EDF9; --green: #2E8B57; --green-soft: #DCEBDD; --green-dark: #2E6B45;
+    --danger: #C4553B; --gold: #E8A013; --gold-soft: #FBEBC8;
+    --soft: #F2EBDD; --soft-text: #8A6A3B; --chip: #EDE4D3; --muted: #6B7686; --border: #C9CDD4;
+    --line: #EDE4D3; --input-bg: #FFFDF8; --eyebrow: #B0763A; --body-text: #4A5568;
+  }
+  body[data-theme="mint"] {
+    --bg: #EDF7F4; --text: #1F3D38; --card: #FFFFFF; --card-shadow: rgba(31,61,56,.10);
+    --accent: #1F7A70; --accent-soft: #D8EFEA; --green: #2E8B57; --green-soft: #DCEBDD; --green-dark: #256B45;
+    --danger: #C4553B; --gold: #D99114; --gold-soft: #FBEBC8;
+    --soft: #DDEFE9; --soft-text: #2F6B5E; --chip: #D8EAE4; --muted: #5C7370; --border: #B9CFC9;
+    --line: #DCEAE5; --input-bg: #FBFEFD; --eyebrow: #1F7A70; --body-text: #3D5A54;
+  }
+  body[data-theme="lavender"] {
+    --bg: #F5F1FA; --text: #372B4E; --card: #FFFFFF; --card-shadow: rgba(55,43,78,.10);
+    --accent: #6A4FA3; --accent-soft: #EAE3F6; --green: #2E8B57; --green-soft: #DCEBDD; --green-dark: #2E6B45;
+    --danger: #C4553B; --gold: #D99114; --gold-soft: #F9EBC9;
+    --soft: #ECE5F5; --soft-text: #5D4A85; --chip: #E6DEF2; --muted: #6E6482; --border: #C8BEDB;
+    --line: #E6DFF1; --input-bg: #FDFCFE; --eyebrow: #6A4FA3; --body-text: #4C4163;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font-family: 'Lexend', 'Trebuchet MS', 'Comic Sans MS', sans-serif;
+  }
+  .wrap { max-width: 680px; margin: 0 auto; padding: 20px 16px 60px; }
+  header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
+  .eyebrow { font-size: 13px; font-weight: 600; color: var(--eyebrow); letter-spacing: .12em; text-transform: uppercase; }
+  h1 { margin: 0; font-size: 30px; font-weight: 800; }
+  .card { background: var(--card); border-radius: 20px; padding: 24px; box-shadow: 0 2px 10px var(--card-shadow); margin-bottom: 16px; }
+  button { font-family: inherit; font-weight: 600; font-size: 15px; padding: 10px 18px; border-radius: 14px; border: none; background: var(--accent); color: #fff; cursor: pointer; letter-spacing: .02em; }
+  button.big { font-size: 22px; padding: 16px 32px; }
+  button.outline { background: transparent; border: 2.5px solid var(--accent); color: var(--accent); }
+  button.green { background: var(--green); }
+  button.danger { background: var(--danger); }
+  button.link { background: none; color: var(--muted); font-size: 13px; text-decoration: underline; padding: 4px; }
+  button:disabled { background: var(--border); color: #fff; cursor: default; border-color: var(--border); }
+  input[type=text], input[type=password], input[type=number] { font-family: inherit; font-size: 15px; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--border); width: 100%; margin-bottom: 8px; background: var(--input-bg); color: var(--text); }
+  select { font-family: inherit; font-size: 15px; padding: 10px 12px; border-radius: 10px; border: 2px solid var(--border); background: var(--input-bg); color: var(--text); }
+  .hint { background: var(--soft); border-radius: 14px; padding: 14px 18px; font-size: 17px; line-height: 1.5; margin-bottom: 24px; }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .muted { color: var(--muted); font-size: 14px; }
+  .chip { background: var(--chip); border-radius: 10px; padding: 4px 12px; font-size: 14px; display: inline-block; margin: 3px; }
+  .feedback { min-height: 56px; margin-top: 14px; font-size: 19px; font-weight: 600; text-align:center; }
+  .center { text-align: center; }
+  details { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  summary { cursor: pointer; font-size: 15px; }
+  label { font-size: 16px; display: block; padding: 4px 0; }
+  .assigned-badge { background: var(--green-soft); color: var(--green-dark); border-radius: 8px; padding: 2px 10px; font-size: 12px; font-weight: 700; }
+  .swatch { width: 84px; height: 56px; border-radius: 14px; border: 3px solid var(--border); cursor: pointer; display: inline-flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; font-size: 12px; font-weight: 700; }
+  .swatch.sel { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  #numDisplay, .num2wrap { font-size: 34px; font-weight: 700; letter-spacing: .1em; text-align: center; padding: 14px; border-radius: 14px; border: 3px solid var(--border); background: var(--input-bg); min-width: 140px; margin: 0 auto; }
+  #numDisplay.ok { border-color: var(--green); } #numDisplay.bad { border-color: var(--danger); }
+  .num2wrap { display:flex; gap:14px; justify-content:center; max-width:320px; }
+  .num2field { flex:1; padding:10px; border-radius:10px; border:3px solid var(--border); cursor:pointer; }
+  .num2field.active { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-soft); }
+  .num2field .lbl { font-size:12px; color:var(--muted); font-weight:700; text-transform:uppercase; letter-spacing:.08em; }
+  .numpad { display:grid; grid-template-columns: repeat(3,1fr); gap:8px; max-width:260px; margin:20px auto 0; }
+  .numpad button { font-size:24px; font-weight:800; padding:16px 0; border-radius:12px; background:var(--card); color:var(--text); border:2px solid var(--border); }
+  .numpad button:active { background: var(--accent-soft); border-color: var(--accent); }
+  .numpad button:disabled { background:#EEE; color:#AAA; }
+  .numpad button.wide { grid-column: span 2; font-size:16px; background:var(--soft); }
+  .cmp-row { display:flex; gap:14px; justify-content:center; margin-top:22px; }
+  .cmp-row button { font-size:32px; font-weight:800; padding:16px 30px; border-radius:16px; }
+  .mg-grid { display:flex; flex-direction:column; gap:2px; overflow-x:auto; padding-bottom:4px; }
+  .mg-row { display:flex; gap:2px; }
+  .mg-cell { width:22px; height:22px; border-radius:4px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:9px; }
+  .mg-head { background:transparent; color:var(--muted); font-weight:700; }
+  .mg-untried { background: var(--line); }
+  .mg-good { background: var(--green); }
+  .mg-mid { background: var(--gold); }
+  .mg-low { background: var(--danger); }
+  .mg-na { background: transparent; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="eyebrow">Math Star</div>
+      <h1 id="greeting">Welcome! &#127919;</h1>
+    </div>
+    <button class="outline" id="homeBtn" style="display:none" onclick="lockAndHome()">Home</button>
+  </header>
+  <div id="app"></div>
+</div>
+
+<script>
+// App version — bump this on any behavior/data-model change, and note it in
+// the design doc changelog. Keeps code and design docs verifiably in sync.
+const APP_VERSION = "v6.1";
+// ---------- Category metadata ----------
+const CATS = [
+  { id: "addition-facts", label: "Addition facts", band: "K-1", widget: "numeric" },
+  { id: "addition-multidigit", label: "Addition (regrouping)", band: "2-3", widget: "numeric" },
+  { id: "subtraction-facts", label: "Subtraction facts", band: "K-1", widget: "numeric" },
+  { id: "subtraction-multidigit", label: "Subtraction (regrouping)", band: "2-3", widget: "numeric" },
+  { id: "multiplication-facts", label: "Multiplication facts", band: "2-4", widget: "numeric" },
+  { id: "division-facts", label: "Division facts (with remainders)", band: "3-4", widget: "numeric2" },
+  { id: "missing-operand", label: "Missing operand", band: "1-3", widget: "numeric" },
+  { id: "fact-families", label: "Fact families", band: "1-3", widget: "numeric" },
+  { id: "place-value", label: "Place value", band: "1-3", widget: "numeric" },
+  { id: "rounding", label: "Rounding", band: "2-4", widget: "numeric" },
+  { id: "comparing-numbers", label: "Comparing numbers", band: "K-2", widget: "comparison" },
+  { id: "skip-counting", label: "Skip counting", band: "K-2", widget: "numeric" },
+];
+function catMeta(id) { return CATS.find(c => c.id === id) || CATS[0]; }
+// A focus area has one or more categories. Older saved data only has a
+// single `category` string; this normalizes both shapes to an array.
+function focusCategories(f) { return f.categories || [f.category]; }
+function isMixedFocus(f) { return focusCategories(f).length > 1; }
+function focusCategoryLabel(f) { return focusCategories(f).map(c => catMeta(c).label).join(", "); }
+
+function formatDuration(ms) {
+  if (!ms || ms < 0) return null;
+  const totalSec = Math.round(ms / 1000);
+  const m = Math.floor(totalSec / 60), s = totalSec % 60;
+  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+}
+
+// ---------- Mastery grid config ----------
+// Only categories with a genuinely bounded fact space get a heatmap grid.
+// Everything else (rounding, place value, skip counting, etc.) generates
+// effectively unique problems each time, so a per-fact grid wouldn't mean
+// anything there — those get a plain accuracy stats card instead.
+const GRID_CATS = {
+  "addition-facts": { min: 0, max: 9 },
+  "subtraction-facts": { min: 0, max: 9 },
+  "multiplication-facts": { min: 0, max: 12 },
+  "division-facts": { min: 2, max: 12 },
+};
+function gridRowCol(category, r) {
+  if (category === "addition-facts") { const [a,b] = r.key.split("+").map(Number); return [a,b]; }
+  if (category === "subtraction-facts") { const [a,b] = r.key.split("-").map(Number); return [a,b]; }
+  if (category === "multiplication-facts") { const [a,b] = r.key.split("x").map(Number); return [a,b]; }
+  if (category === "division-facts") {
+    const divisor = Number(r.key.split("/")[1]);
+    const quotient = (r.answer && typeof r.answer === "object") ? Number(r.answer.q) : null;
+    if (quotient === null || Number.isNaN(divisor)) return null;
+    return [divisor, quotient];
+  }
+  return null;
+}
+
+// ---------- Subgroup mastery config (prototype: rounding only) ----------
+// For open-ended categories where a flat accuracy % doesn't feel like real
+// progress, a category can instead be split into named subgroups, each
+// mastered independently via its own streak (data.subgroupMastery, keyed
+// "{category}::{subgroupId}"). Rounding is the first category to use this;
+// others still fall back to the plain accuracy stat until/unless they get
+// their own grouping defined here.
+const SUBGROUP_CATS = {
+  "rounding": [
+    { id: "nearest-10", label: "Nearest 10", roundTo: 10 },
+    { id: "nearest-100", label: "Nearest 100", roundTo: 100 },
+    { id: "nearest-1000", label: "Nearest 1000", roundTo: 1000 },
+    { id: "nearest-10000", label: "Nearest 10,000", roundTo: 10000 },
+    { id: "nearest-100000", label: "Nearest 100,000", roundTo: 100000 },
+  ],
+};
+function subgroupList(cat) { return SUBGROUP_CATS[cat] || []; }
+function subgroupMeta(cat, id) { return subgroupList(cat).find(s => s.id === id); }
+// Streak goals for subgrouped categories are set per subcategory (e.g.
+// rounding's "nearest 10" vs "nearest 100,000" can have different goals),
+// not one shared number for the whole category.
+function subgroupRequired(cat, subId) {
+  const catMap = data.subgroupMasteryRequired && data.subgroupMasteryRequired[cat];
+  const val = catMap && catMap[subId];
+  return (val !== undefined && val !== null) ? val : 30;
+}
+
+// ---------- Per-category mastery overrides ----------
+// masteryStreakRequired / resurfaceAfterSessions used to be single global
+// numbers. As more categories pick up their own mastery mechanics (grid,
+// subgroup, or eventually others), each one needs to be tunable on its own,
+// so these are now per-category overrides that fall back to the global
+// default when a category hasn't been customized.
+// For a category with subcategories, an individual fact always belongs to
+// one of them, so its graduation streak defers entirely to that
+// subcategory's own goal rather than a category-wide number.
+function masteryRequiredFor(cat, subgroup) {
+  if (subgroup && subgroupMeta(cat, subgroup)) return subgroupRequired(cat, subgroup);
+  const override = data.categoryMasteryRequired && data.categoryMasteryRequired[cat];
+  return (override !== undefined && override !== null) ? override : (data.masteryStreakRequired || 3);
+}
+function resurfaceAfterFor(cat) {
+  const override = data.categoryResurfaceAfterSessions && data.categoryResurfaceAfterSessions[cat];
+  return (override !== undefined && override !== null) ? override : (data.resurfaceAfterSessions || 10);
+}
+
+
+// space) count mastered-vs-total facts, using the same accuracy bar as the
+// heatmap cell coloring. Open-ended categories have no fixed total, so this
+// falls back to overall accuracy instead — it's still a meaningful 0-100
+// signal, just a different kind of "progress."
+function computeMasteryProgress(cat) {
+  const cfg = GRID_CATS[cat];
+  if (cfg) {
+    const required = masteryRequiredFor(cat);
+    let total = 0, mastered = 0;
+    for (let r = cfg.min; r <= cfg.max; r++) {
+      for (let c = cfg.min; c <= cfg.max; c++) {
+        if (cat === "subtraction-facts" && c > r) continue;
+        total++;
+        const cell = data.masteryGrid[`${cat}::${r}-${c}`];
+        if (cell && (cell.streak || 0) >= required) mastered++;
+      }
+    }
+    const pct = total ? Math.round(100 * mastered / total) : 0;
+    return { bounded: true, pct, mastered, total, unit: "facts" };
+  }
+  const subs = subgroupList(cat);
+  if (subs.length) {
+    let mastered = 0;
+    subs.forEach(s => {
+      const cell = data.subgroupMastery[`${cat}::${s.id}`];
+      if (cell && (cell.streak || 0) >= subgroupRequired(cat, s.id)) mastered++;
+    });
+    const total = subs.length;
+    const pct = total ? Math.round(100 * mastered / total) : 0;
+    return { bounded: true, pct, mastered, total, unit: "groupings" };
+  }
+  const cs = data.categoryStats[cat];
+  const pct = (cs && cs.attempts) ? Math.round(100 * cs.correct / cs.attempts) : 0;
+  return { bounded: false, pct, attempts: cs ? cs.attempts : 0 };
+}
+// showNumbers=false (kid view): visual only, no digits, per the "no percent
+// to the kid" convention. showNumbers=true (parent view): plain numbers.
+function renderProgressBarHtml(cat, showNumbers) {
+  const p = computeMasteryProgress(cat);
+  const stars = Math.max(0, Math.min(5, Math.round(p.pct / 20)));
+  const starsHtml = Array.from({length:5}, (_,i) => `<span style="color:${i<stars?"var(--gold)":"var(--border)"}">&#9733;</span>`).join("");
+  const label = !showNumbers ? "" : p.bounded
+    ? `${p.mastered} of ${p.total} ${p.unit || "facts"} mastered`
+    : (p.attempts ? `${p.pct}% overall accuracy` : "No attempts yet");
+  return `<div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">
+      <span style="font-size:19px;letter-spacing:.08em">${starsHtml}</span>
+      ${label ? `<span class="muted" style="font-size:13px">${label}</span>` : ""}
+    </div>
+    <div style="background:var(--line);border-radius:999px;height:14px;overflow:hidden">
+      <div style="background:var(--green);height:100%;width:${p.pct}%;border-radius:999px"></div>
+    </div>
+  </div>`;
+}
+
+// ---------- Storage keys / profiles ----------
+function listProfiles() {
+  const out = [];
+  for (let i = 0; i < localStorage.length; i++) {
+    const k = localStorage.key(i);
+    if (!k || !k.startsWith("mathstar-")) continue;
+    try {
+      const d = JSON.parse(localStorage.getItem(k));
+      if (d && d.childName && d.pin) { out.push({ key: k, name: d.childName, corrupted: false }); continue; }
+      // Parses fine but is missing required fields — surface it as damaged
+      // rather than silently dropping it (and the child's data with it).
+      out.push({ key: k, name: k.replace(/^mathstar-/, "") || "profile", corrupted: true });
+    } catch(e) {
+      out.push({ key: k, name: k.replace(/^mathstar-/, "") || "profile", corrupted: true });
+    }
+  }
+  return out.sort((a,b) => a.name.localeCompare(b.name));
+}
+function nameToKey(name) {
+  const s = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
+  return "mathstar-" + (s || "child");
+}
+let KEY = null;
+let data = null;
+
+function freshData(childName, pin, gradeLevel) {
+  return {
+    childName, pin, gradeLevel,
+    showHistory: true,
+    allowChildFocusSwitch: false,
+    theme: "classic",
+    drillLength: 12,
+    focusAreas: [{ id: "starter", category: "addition-facts", gradeBand: "K-1", name: "Addition Warm-up" }],
+    activeFocusId: "starter",
+    reviewFacts: [],
+    sessions: [],
+    schedule: defaultSchedule(),
+    graduated: [],
+    masteryGrid: {},
+    categoryStats: {},
+    subgroupMastery: {},
+    subgroupMasteryRequired: { rounding: Object.fromEntries(subgroupList("rounding").map(s => [s.id, 30])) },
+    resurfaceAfterSessions: 10,
+    masteryStreakRequired: 3,
+    categoryMasteryRequired: {},
+    categoryResurfaceAfterSessions: {},
+    reviewBankPercent: 50,
+    streakDays: 0,
+    lastPracticeDate: null,
+  };
+}
+function defaultDay() { return { practiceEnabled: true, drillEnabled: true }; }
+function defaultSchedule() { return Array.from({length:7}, defaultDay); }
+
+// Set by load() on failure so callers can tell "no profile at this key"
+// (expected, e.g. first launch) apart from "data was there but unreadable"
+// (real corruption, worth telling the parent about instead of silently
+// treating it as if the profile never existed).
+let lastLoadError = null;
+function load(key) {
+  lastLoadError = null;
+  const raw = localStorage.getItem(key);
+  if (!raw) return null;
+  let d;
+  try {
+    d = JSON.parse(raw);
+  } catch(e) {
+    lastLoadError = "corrupted";
+    return null;
+  }
+  try {
+    KEY = key;
+    if (!d.schedule) d.schedule = defaultSchedule();
+    d.schedule = d.schedule.map(day => Object.assign(defaultDay(), day));
+    if (!d.graduated) d.graduated = [];
+    if (!d.reviewFacts) d.reviewFacts = [];
+    if (!d.masteryGrid) d.masteryGrid = {};
+    if (d.showHistory === undefined) d.showHistory = true;
+    if (d.allowChildFocusSwitch === undefined) d.allowChildFocusSwitch = false;
+    if (!d.theme) d.theme = "classic";
+    if (!d.drillLength) d.drillLength = 12;
+    if (!d.focusAreas) d.focusAreas = [{ id: "starter", category: "addition-facts", gradeBand: "K-1", name: "Addition Warm-up" }];
+    if (!d.activeFocusId) d.activeFocusId = d.focusAreas[0].id;
+    if (!d.gradeLevel) d.gradeLevel = "2";
+    if (!d.categoryStats) d.categoryStats = {};
+    if (!d.subgroupMastery) d.subgroupMastery = {};
+    if (!d.subgroupMasteryRequired) d.subgroupMasteryRequired = {};
+    // Migrate: this used to be one shared number per category (e.g.
+    // { rounding: 30 }); now each subcategory gets its own goal. A legacy
+    // flat number seeds every subcategory at that same value. Any
+    // subcategory still missing a value (including ones added after this
+    // profile was created, like nearest-10000/100000) falls back to 30.
+    Object.keys(SUBGROUP_CATS).forEach(cat => {
+      const existing = d.subgroupMasteryRequired[cat];
+      const legacy = typeof existing === "number" ? existing : null;
+      const map = (legacy === null && existing && typeof existing === "object") ? existing : {};
+      subgroupList(cat).forEach(s => {
+        if (map[s.id] === undefined) map[s.id] = legacy !== null ? legacy : 30;
+      });
+      d.subgroupMasteryRequired[cat] = map;
+    });
+    if (!d.resurfaceAfterSessions) d.resurfaceAfterSessions = 10;
+    if (!d.masteryStreakRequired) d.masteryStreakRequired = 3;
+    if (!d.categoryMasteryRequired) d.categoryMasteryRequired = {};
+    if (!d.categoryResurfaceAfterSessions) d.categoryResurfaceAfterSessions = {};
+    if (!d.reviewBankPercent) d.reviewBankPercent = 50;
+    // Migrate old masteryGrid cells to the streak-based model: we can't know
+    // their real historical streak, so they start at 0 (not yet mastered)
+    // rather than assuming they'd pass the new, stricter bar.
+    Object.keys(d.masteryGrid || {}).forEach(k => {
+      if (d.masteryGrid[k].streak === undefined) d.masteryGrid[k].streak = 0;
+    });
+    if (d.streakDays === undefined) d.streakDays = 0;
+    if (d.lastPracticeDate === undefined) d.lastPracticeDate = null;
+    // Migrate graduated entries from before resurfacing existed: we can't safely
+    // reconstruct their prompt/answer, so they're grandfathered as permanently
+    // graduated rather than guessed at.
+    d.graduated = (d.graduated || []).map(g => {
+      if (g.sessionsAtGraduation === undefined) {
+        return { ...g, resurfaceEligible: false };
+      }
+      return g;
+    });
+    // Reliability cap (per design doc §1): keep the file snappy on old devices
+    // by capping stored session history; CSV export is the long-term record.
+    if (d.sessions && d.sessions.length > 300) {
+      d.sessions = d.sessions.slice(d.sessions.length - 300);
+    }
+    // v6 §3.4: the per-fact review/graduation pool is bounded-fact-space only.
+    // Prune any open-ended entries left over from before this rule existed.
+    // categoryStats/subgroupMastery (where open-ended progress actually lives)
+    // are untouched, so no progress is lost.
+    d.reviewFacts = (d.reviewFacts || []).filter(r => GRID_CATS[r.category]);
+    d.graduated   = (d.graduated || []).filter(g => GRID_CATS[g.category]);
+    return d;
+  } catch(e) {
+    lastLoadError = "corrupted";
+    return null;
+  }
+}
+function countCategorySessions(d, category) {
+  return (d.sessions || []).filter(
+    s => s.mode === "drill" && (s.results || []).some(r => r.category === category)
+  ).length;
+}
+function persist() {
+  try {
+    localStorage.setItem(KEY, JSON.stringify(data));
+    return true;
+  } catch(e) {
+    return false;
+  }
+}
+function activeFocus() { return data.focusAreas.find(f => f.id === data.activeFocusId) || data.focusAreas[0]; }
+function applyTheme() {
+  document.body.dataset.theme = data && data.theme !== "classic" ? data.theme : "";
+  if (data) document.getElementById("greeting").innerHTML = `Hi, ${esc(data.childName)}! &#127919;`;
+}
+
+// ---------- Utilities ----------
+function esc(s){ return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function sessionCategoryLabel(s) {
+  const cats = s.categories || [s.category];
+  return cats.map(c => catMeta(c).label).join(" + ");
+}
+function shuffle(a){ a=[...a]; for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];} return a; }
+function randInt(min,max){ return Math.floor(Math.random()*(max-min+1))+min; }
+
+// ---------- Problem generators ----------
+function genAdditionFacts(){ const a=randInt(0,9), b=randInt(0,9); return { key:`${a}+${b}`, prompt:`${a} + ${b} = ?`, answer:a+b }; }
+function genAdditionMultidigit(){
+  const digits = Math.random()<0.5?2:3;
+  const min = digits===2?10:100, max = digits===2?99:999;
+  const a=randInt(min,max), b=randInt(min,max);
+  return { key:`${a}+${b}`, prompt:`${a} + ${b} = ?`, answer:a+b };
+}
+function genSubtractionFacts(){ const a=randInt(0,9), b=randInt(0,a); return { key:`${a}-${b}`, prompt:`${a} - ${b} = ?`, answer:a-b }; }
+function genSubtractionMultidigit(){
+  const digits = Math.random()<0.5?2:3;
+  const min = digits===2?10:100, max = digits===2?99:999;
+  let a=randInt(min,max), b=randInt(min,max);
+  if (b>a) [a,b]=[b,a];
+  return { key:`${a}-${b}`, prompt:`${a} - ${b} = ?`, answer:a-b };
+}
+function genMultiplicationFacts(){ const a=randInt(0,12), b=randInt(0,12); return { key:`${a}x${b}`, prompt:`${a} &times; ${b} = ?`, answer:a*b }; }
+function genDivisionFacts(){
+  const divisor=randInt(2,12), quotient=randInt(2,12);
+  const remainder = Math.random()<0.4 ? randInt(1,divisor-1) : 0;
+  const dividend = divisor*quotient+remainder;
+  return { key:`${dividend}/${divisor}`, prompt:`${dividend} &divide; ${divisor} = ?`, answer:{ q:quotient, r:remainder } };
+}
+function genMissingOperand(){
+  const op = Math.random()<0.5 ? "+" : "-";
+  let a,b,c;
+  if (op==="+") { a=randInt(1,20); b=randInt(1,20); c=a+b; } else { a=randInt(5,20); b=randInt(1,a); c=a-b; }
+  if (Math.random()<0.5) return { key:`_${op}${b}=${c}`, prompt:`▢ ${op} ${b} = ${c}`, answer:a };
+  return { key:`${a}${op}_=${c}`, prompt:`${a} ${op} ▢ = ${c}`, answer:b };
+}
+function genFactFamilies(){
+  const a=randInt(1,12), b=randInt(1,12), c=a+b;
+  const variants = [
+    { prompt:`${a} + ${b} = ▢`, answer:c },
+    { prompt:`${b} + ${a} = ▢`, answer:c },
+    { prompt:`${c} - ${a} = ▢`, answer:b },
+    { prompt:`${c} - ${b} = ▢`, answer:a },
+  ];
+  const v = variants[randInt(0,3)];
+  return { key:`fam-${a}-${b}-${v.prompt}`, prompt:v.prompt, answer:v.answer };
+}
+function genPlaceValue(){
+  const n = randInt(100,9999);
+  const s = String(n);
+  const pos = randInt(0,s.length-1);
+  const digit = Number(s[pos]);
+  const fromRight = s.length-1-pos;
+  const placeNames = ["ones","tens","hundreds","thousands"];
+  const value = digit * Math.pow(10, fromRight);
+  return { key:`pv-${n}-${pos}`, prompt:`In ${n}, what is the value of the digit ${digit} (the ${placeNames[fromRight]||"?"} place)?`, answer:value };
+}
+// Numbers now range up to 999,999 (previously capped at 9999) so that
+// rounding to the nearest 10,000 or 100,000 has real headroom in the digits
+// that actually matter. Each roundTo gets a min just above itself so the
+// answer is never trivially 0.
+const ROUNDING_MAX = 999999;
+function genRounding(subgroupId){
+  const meta = subgroupId ? subgroupMeta("rounding", subgroupId) : null;
+  const roundTo = meta ? meta.roundTo : [10,100,1000,10000,100000][randInt(0,4)];
+  const n = randInt(roundTo + 1, ROUNDING_MAX);
+  return { key:`round-${n}-${roundTo}`, prompt:`Round ${n.toLocaleString()} to the nearest ${roundTo.toLocaleString()}.`, answer: Math.round(n/roundTo)*roundTo, subgroup: meta ? meta.id : undefined };
+}
+function genComparingNumbers(){
+  const a=randInt(1,999), b=randInt(1,999);
+  const answer = a>b?">":a<b?"<":"=";
+  return { key:`cmp-${a}-${b}`, prompt:`${a}     ${b}`, answer };
+}
+function genSkipCounting(){
+  const step=[2,3,5,10][randInt(0,3)];
+  const start=randInt(1,10)*step;
+  const seq=[start,start+step,start+2*step];
+  return { key:`skip-${step}-${start}`, prompt:`${seq.join(", ")}, ___ ?`, answer:start+3*step };
+}
+function buildProblem(category){
+  const widget = catMeta(category).widget;
+  let g;
+  switch(category){
+    case "addition-facts": g=genAdditionFacts(); break;
+    case "addition-multidigit": g=genAdditionMultidigit(); break;
+    case "subtraction-facts": g=genSubtractionFacts(); break;
+    case "subtraction-multidigit": g=genSubtractionMultidigit(); break;
+    case "multiplication-facts": g=genMultiplicationFacts(); break;
+    case "division-facts": g=genDivisionFacts(); break;
+    case "missing-operand": g=genMissingOperand(); break;
+    case "fact-families": g=genFactFamilies(); break;
+    case "place-value": g=genPlaceValue(); break;
+    case "rounding": {
+      const subs = subgroupList("rounding");
+      g = genRounding(subs.length ? subs[randInt(0, subs.length - 1)].id : undefined);
+      break;
+    }
+    case "comparing-numbers": g=genComparingNumbers(); break;
+    case "skip-counting": g=genSkipCounting(); break;
+    default: g=genAdditionFacts(); category="addition-facts";
+  }
+  return { ...g, category, type: widget };
+}
+// Rejection-sample against facts already picked for this session so the same
+// exact fact (e.g. "7x8") doesn't turn up twice in one drill/practice run.
+// Bounded categories can run out of headroom near the edge of their fact
+// space, so this gives up gracefully after a bounded number of tries rather
+// than looping forever.
+function buildUniqueProblem(category, usedKeys, maxTries) {
+  for (let i = 0; i < (maxTries || 20); i++) {
+    const p = buildProblem(category);
+    if (!usedKeys.has(p.key)) { usedKeys.add(p.key); return p; }
+  }
+  return buildProblem(category); // fact space exhausted for this session; accept a repeat
+}
+// Answer-value signature used to group problems so we can keep same-answer
+// items apart, independent of the underlying fact key.
+function answerSig(item) {
+  if (item.type === "numeric2" && item.answer && typeof item.answer === "object") return `${item.answer.q}|${item.answer.r}`;
+  return String(item.answer);
+}
+// Greedy "spread the most common answer out first" ordering — the standard
+// approach for arranging items so no two adjacent ones match, when a perfect
+// arrangement may not always be possible (e.g. one answer dominates the
+// pool). Only forces a repeat when it's genuinely unavoidable.
+function orderNoAdjacentAnswers(pool) {
+  const buckets = new Map();
+  pool.forEach(item => {
+    const k = answerSig(item);
+    if (!buckets.has(k)) buckets.set(k, []);
+    buckets.get(k).push(item);
+  });
+  const groups = Array.from(buckets.entries()).map(([k, items]) => ({ k, items: shuffle(items) }));
+  const result = [];
+  let lastKey = null;
+  while (groups.length) {
+    groups.sort((a, b) => b.items.length - a.items.length);
+    let idx = groups.findIndex(g => g.k !== lastKey);
+    if (idx === -1) idx = 0; // no alternative left — unavoidable repeat
+    const group = groups[idx];
+    result.push(group.items.pop());
+    lastKey = group.k;
+    if (group.items.length === 0) groups.splice(idx, 1);
+  }
+  return result;
+}
+
+// ---------- Router / lock ----------
+const app = document.getElementById("app");
+let parentUnlocked = false;
+
+function lockAndHome() { parentUnlocked = false; go("home"); }
+function go(view) {
+  document.getElementById("homeBtn").style.display = view === "home" ? "none" : "";
+  const today = data.schedule[new Date().getDay()] || defaultDay();
+  clearSessionTimer();
+  if (view !== "practice" && view !== "drill") S = null;
+  if (view === "home") return renderHome();
+  if (view === "history") { if (!data.showHistory) return renderHome(); return renderHistory(); }
+  if (view === "practice") { if (!today.practiceEnabled) return renderHome(); return startSession("practice"); }
+  if (view === "drill") { if (!today.drillEnabled) return renderHome(); return startSession("drill"); }
+  if (view === "progress") return renderProgress();
+  if (view === "kidsettings") return renderKidSettings();
+  if (view === "switchfocus") { if (!data.allowChildFocusSwitch) return renderHome(); return renderFocusSwitch(); }
+  if (view === "parent") return parentGate();
+}
+
+// ---------- First-launch setup wizard ----------
+const setup = { pin: null, name: null };
+function renderSetup(step) {
+  document.getElementById("homeBtn").style.display = "none";
+  document.getElementById("greeting").innerHTML = "Welcome! &#127919;";
+  parentUnlocked = false;
+  if (step === 1) {
+    app.innerHTML = `
+      <div class="card center" style="padding:36px;max-width:420px;margin:0 auto">
+        <div style="font-size:34px;margin-bottom:10px">&#128274;</div>
+        <div style="font-weight:700;font-size:18px;margin-bottom:6px">Step 1 of 3 &mdash; Set a parent PIN</div>
+        <div class="muted" style="margin-bottom:14px">You'll need this PIN to open the parent dashboard, where you manage focus areas, schedule, and results.</div>
+        <input type="password" id="pinIn" inputmode="numeric" maxlength="8" placeholder="New PIN (at least 4 digits)" style="text-align:center;font-size:22px;letter-spacing:.3em">
+        <input type="password" id="pinIn2" inputmode="numeric" maxlength="8" placeholder="Repeat PIN" style="text-align:center;font-size:22px;letter-spacing:.3em">
+        <div id="setupMsg" class="muted" style="min-height:20px;color:var(--danger)"></div>
+        <button class="big" onclick="setupPin()" style="margin-top:8px">Continue &rarr;</button>
+      </div>`;
+    document.getElementById("pinIn").focus();
+  } else if (step === 2) {
+    app.innerHTML = `
+      <div class="card center" style="padding:36px;max-width:420px;margin:0 auto">
+        <div style="font-size:34px;margin-bottom:10px">&#128075;</div>
+        <div style="font-weight:700;font-size:18px;margin-bottom:6px">Step 2 of 3 &mdash; Who's practicing?</div>
+        <div class="muted" style="margin-bottom:14px">This name appears throughout the app.</div>
+        <input type="text" id="nameIn" placeholder="Child's first name" style="text-align:center;font-size:20px">
+        <div id="setupMsg" class="muted" style="min-height:20px;color:var(--danger)"></div>
+        <button class="big" onclick="setupName()" style="margin-top:8px">Continue &rarr;</button>
+      </div>`;
+    document.getElementById("nameIn").focus();
+  } else {
+    const grades = ["K","1","2","3","4","5","6","7"];
+    app.innerHTML = `
+      <div class="card center" style="padding:36px;max-width:420px;margin:0 auto">
+        <div style="font-size:34px;margin-bottom:10px">&#127891;</div>
+        <div style="font-weight:700;font-size:18px;margin-bottom:6px">Step 3 of 3 &mdash; What grade level?</div>
+        <div class="muted" style="margin-bottom:16px">This helps suggest the right categories later. You can change it anytime in the parent dashboard.</div>
+        <div class="row center" style="justify-content:center;max-width:320px;margin:0 auto">
+          ${grades.map(g => `<button class="outline" style="width:60px" onclick="setupFinish('${g}')">${g}</button>`).join("")}
+        </div>
+      </div>`;
+  }
+}
+function setupPin() {
+  const v = document.getElementById("pinIn").value.trim();
+  const v2 = document.getElementById("pinIn2").value.trim();
+  const msg = document.getElementById("setupMsg");
+  if (v.length < 4) { msg.textContent = "PIN must be at least 4 digits."; return; }
+  if (v !== v2) { msg.textContent = "PINs don't match — try again."; return; }
+  setup.pin = v; renderSetup(2);
+}
+function setupName() {
+  const v = document.getElementById("nameIn").value.trim();
+  const msg = document.getElementById("setupMsg");
+  if (!v) { msg.textContent = "Please enter a name."; return; }
+  setup.name = v; renderSetup(3);
+}
+function setupFinish(gradeLevel) {
+  KEY = nameToKey(setup.name);
+  const existing = localStorage.getItem(KEY);
+  if (existing && !confirm(`This device already has saved data for a child named "${setup.name}". Continue and use that existing data?`)) return;
+  if (existing) { data = load(KEY); }
+  else { data = freshData(setup.name, setup.pin, gradeLevel); persist(); }
+  applyTheme();
+  go("home");
+}
+
+// ---------- Profile picker ----------
+function renderPicker() {
+  document.getElementById("homeBtn").style.display = "none";
+  document.getElementById("greeting").innerHTML = "Welcome! &#127919;";
+  const profiles = listProfiles();
+  const healthy = profiles.filter(p => !p.corrupted);
+  const damaged = profiles.filter(p => p.corrupted);
+  app.innerHTML = `
+    <div class="card center" style="padding:36px;max-width:420px;margin:0 auto">
+      <div style="font-size:34px;margin-bottom:10px">&#128075;</div>
+      <div style="font-weight:700;font-size:18px;margin-bottom:16px">Who's practicing today?</div>
+      <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+        ${healthy.map(p => `<button class="big" style="width:260px" onclick="pickProfile('${p.key}')">${esc(p.name)}</button>`).join("")}
+        <button class="outline" style="width:260px" onclick="renderSetup(1)">+ Add a new child</button>
+      </div>
+    </div>
+    ${damaged.length ? `<div class="card" style="max-width:420px;margin:16px auto 0;background:var(--gold-soft);border:2px solid var(--gold)">
+      <div style="font-weight:700;margin-bottom:6px">&#9888;&#65039; Damaged profile data found</div>
+      <div class="muted" style="font-size:14px;margin-bottom:10px">This device has saved data that can't be read (often from an interrupted save). It can't be recovered automatically.</div>
+      ${damaged.map(p => `<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--line)">
+        <span>${esc(p.name)}</span>
+        <button class="link" style="color:var(--danger)" onclick="discardCorruptedProfile('${p.key}')">Remove &amp; start fresh</button>
+      </div>`).join("")}
+    </div>` : ""}`;
+}
+function discardCorruptedProfile(key) {
+  if (!confirm("This permanently deletes the damaged data at this profile so you can set it up fresh under the same name. This can't be undone. Continue?")) return;
+  try { localStorage.removeItem(key); } catch(e) {}
+  renderPicker();
+}
+function pickProfile(key) {
+  data = load(key);
+  if (!data) {
+    if (lastLoadError === "corrupted") alert("This profile's data couldn't be read — it looks like it was damaged.");
+    return renderPicker();
+  }
+  parentUnlocked = false;
+  applyTheme();
+  go("home");
+}
+
+// ---------- Parent gate ----------
+function parentGate() {
+  if (parentUnlocked) return renderParent("focus");
+  app.innerHTML = `
+    <div class="card center" style="padding:36px;max-width:400px;margin:0 auto">
+      <div style="font-size:34px;margin-bottom:10px">&#128274;</div>
+      <div style="font-weight:700;font-size:18px;margin-bottom:6px">Parents only</div>
+      <input type="password" id="pinIn" inputmode="numeric" maxlength="8" placeholder="Enter PIN" style="text-align:center;font-size:22px;letter-spacing:.3em">
+      <div id="pinMsg" class="muted" style="min-height:20px;color:var(--danger)"></div>
+      <button class="big" onclick="pinSubmit()" style="margin-top:8px">Unlock</button>
+    </div>`;
+  const pi = document.getElementById("pinIn");
+  pi.focus();
+  pi.addEventListener("keydown", e => { if (e.key==="Enter") pinSubmit(); });
+}
+function pinSubmit() {
+  const v = document.getElementById("pinIn").value.trim();
+  if (v === data.pin) { parentUnlocked = true; renderParent("focus"); }
+  else { document.getElementById("pinMsg").textContent = "That's not the right PIN."; document.getElementById("pinIn").value = ""; }
+}
+
+// ---------- Home ----------
+function renderHome() {
+  const last = data.sessions[data.sessions.length-1];
+  const focus = activeFocus();
+  const today = data.schedule[new Date().getDay()] || defaultDay();
+  app.innerHTML = `
+    <div class="card center" style="padding:36px">
+      <div style="font-size:20px;margin-bottom:6px">What would you like to do today?</div>
+      <div class="muted" style="margin-bottom:14px">Today's focus: <strong>${esc(focus.name)}</strong></div>
+      ${!isMixedFocus(focus) ? `<div style="max-width:280px;margin:0 auto 22px">${renderProgressBarHtml(focusCategories(focus)[0], false)}</div>` : ""}
+      <div style="display:flex;flex-direction:column;gap:14px;align-items:center">
+        <button class="big" style="width:260px" ${today.practiceEnabled?`onclick="go('practice')"`:`disabled`}>&#127919; Practice</button>
+        ${!today.practiceEnabled ? '<div class="muted">No practice today — enjoy the break!</div>' : ""}
+        <button class="big green" style="width:260px" ${today.drillEnabled?`onclick="go('drill')"`:`disabled`}>&#9201;&#65039; Drill</button>
+        ${!today.drillEnabled ? '<div class="muted">No drill today!</div>' : ""}
+        <button class="big outline" style="width:260px" onclick="go('progress')">&#129513; My Progress</button>
+        ${data.showHistory ? `<button class="big outline" style="width:260px" onclick="go('history')">&#128200; My History</button>` : ""}
+      </div>
+    </div>
+    ${last ? `<div class="card" style="cursor:pointer" onclick="showSessionDetail(${last.id},'home')"><div class="muted">Last session &middot; tap to see each problem &rarr;</div><div style="font-size:17px;font-weight:600">${last.mode==="drill"?"Drill":"Practice"} &middot; ${esc(sessionCategoryLabel(last))} &middot; ${last.score}/${last.total} correct</div><div class="muted" style="margin-top:4px">${new Date(last.date).toLocaleDateString()}</div></div>` : ""}
+    <div class="center">
+      <button class="link" onclick="go('kidsettings')">&#9881;&#65039; My settings</button>
+      ${data.allowChildFocusSwitch && data.focusAreas.length > 1 ? `<button class="link" onclick="go('switchfocus')">&#128260; Switch focus</button>` : ""}
+      ${listProfiles().length > 1 ? `<button class="link" onclick="parentUnlocked=false;renderPicker()">Switch child</button>` : ""}
+      <button class="link" onclick="go('parent')">Parent dashboard</button>
+    </div>`;
+}
+
+// ---------- Kid-facing focus switcher (parent-gated) ----------
+function renderFocusSwitch() {
+  app.innerHTML = `
+    <div class="card">
+      <div style="font-weight:700;font-size:18px;margin-bottom:4px">&#128260; Switch what you're practicing</div>
+      <div class="muted" style="margin-bottom:16px">Pick a focus area to make it today's practice.</div>
+      ${data.focusAreas.map(f => `
+        <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap">
+          <span style="font-size:17px;font-weight:600;flex:1">${esc(f.name)}</span>
+          <span class="muted">${esc(focusCategoryLabel(f))}</span>
+          ${f.id===data.activeFocusId ? '<span class="assigned-badge">CURRENT</span>' : `<button onclick="pickFocusChild('${f.id}')">Choose</button>`}
+        </div>`).join("")}
+    </div>
+    <div class="center"><button class="big outline" onclick="go('home')">Cancel</button></div>`;
+}
+function pickFocusChild(id) { data.activeFocusId = id; persist(); go("home"); }
+
+// ---------- Kid settings ----------
+function renderKidSettings() {
+  const themes = [
+    { id: "classic", name: "Classic", bg: "#FDF6EC", accent: "#2A5D9F" },
+    { id: "mint", name: "Mint", bg: "#EDF7F4", accent: "#1F7A70" },
+    { id: "lavender", name: "Lavender", bg: "#F5F1FA", accent: "#6A4FA3" },
+  ];
+  app.innerHTML = `
+    <div class="card">
+      <div style="font-weight:700;font-size:18px;margin-bottom:4px">&#9881;&#65039; My settings</div>
+      <div class="muted" style="margin-bottom:16px">Make the app feel right for you!</div>
+      <div style="font-weight:700;margin-bottom:8px">Colors</div>
+      <div class="row">
+        ${themes.map(t => `<div class="swatch ${data.theme===t.id?"sel":""}" style="background:${t.bg};color:${t.accent}" onclick="setKid('theme','${t.id}')">${t.name}</div>`).join("")}
+      </div>
+    </div>
+    <div class="center"><button class="big" onclick="go('home')">Done</button></div>`;
+}
+function setKid(field, value) { data[field] = value; persist(); applyTheme(); renderKidSettings(); }
+
+// ---------- Kid-facing history (simple, no percent/grade) ----------
+function renderHistory() {
+  const sessions = [...data.sessions].reverse();
+  if (!sessions.length) {
+    app.innerHTML = `<div class="card center" style="padding:40px">
+      <div style="font-size:40px;margin-bottom:8px">&#128200;</div>
+      <div style="font-size:18px;font-weight:600">No sessions yet!</div>
+      <div class="muted" style="margin-top:6px">Practice or Drill once and it'll show up here.</div>
+    </div>`;
+    return;
+  }
+  app.innerHTML = `<div class="card">
+    <div style="font-weight:700;margin-bottom:10px">Recent sessions</div>
+    ${sessions.slice(0,20).map(s => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap;cursor:pointer" onclick="showSessionDetail(${s.id},'history')">
+        <span style="font-size:16px;font-weight:600">${s.mode==="drill"?"Drill":"Practice"} &middot; ${esc(sessionCategoryLabel(s))}</span>
+        <span style="text-align:right">
+          <span style="font-size:18px;font-weight:800;color:var(--accent)">${s.score}/${s.total}</span>
+          <span class="muted" style="display:block;font-size:13px">${new Date(s.date).toLocaleDateString()}</span>
+        </span>
+      </div>`).join("")}
+  </div>`;
+}
+function showSessionDetail(id, returnTo) {
+  const s = data.sessions.find(x => x.id === id);
+  document.getElementById("homeBtn").style.display = "";
+  if (!s) return returnTo === "history" ? renderHistory() : renderHome();
+  const dur = formatDuration(s.elapsedMs);
+  app.innerHTML = `<div class="card">
+    <div style="font-weight:700;font-size:18px;margin-bottom:2px">${s.mode==="drill"?"&#9201;&#65039; Drill":"&#127919; Practice"} &middot; ${esc(sessionCategoryLabel(s))}</div>
+    <div class="muted" style="margin-bottom:14px">${new Date(s.date).toLocaleString()}${dur?` &middot; ${dur}`:""} &middot; <strong style="color:var(--accent)">${s.score}/${s.total} correct</strong></div>
+    ${s.results.map(r => `
+      <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--line)">
+        <span style="font-size:20px">${r.correct?"&#9989;":"&#10060;"}</span>
+        <span style="flex:1;font-size:16px">${esc(r.prompt)}</span>
+        ${!r.correct ? `<span class="muted" style="font-size:14px">answer: ${esc(String(r.answer))}</span>` : ""}
+      </div>`).join("")}
+  </div>
+  <div class="center"><button class="big outline" onclick="go('${returnTo==='history'?'history':'home'}')">&larr; Back</button></div>`;
+}
+
+// ---------- Mastery grid / stats rendering (shared by kid + parent views) ----------
+function renderGridHtml(cat) {
+  const cfg = GRID_CATS[cat];
+  const meta = catMeta(cat);
+  const nums = [];
+  for (let i = cfg.min; i <= cfg.max; i++) nums.push(i);
+  let rows = `<div class="mg-row"><div class="mg-cell mg-head"></div>${nums.map(c => `<div class="mg-cell mg-head">${c}</div>`).join("")}</div>`;
+  nums.forEach(r => {
+    rows += `<div class="mg-row"><div class="mg-cell mg-head">${r}</div>`;
+    nums.forEach(c => {
+      if (cat === "subtraction-facts" && c > r) { rows += `<div class="mg-cell mg-na"></div>`; return; }
+      const cell = data.masteryGrid[`${cat}::${r}-${c}`];
+      let cls = "mg-untried";
+      if (cell && cell.attempts > 0) {
+        const required = masteryRequiredFor(cat);
+        const streak = cell.streak || 0;
+        cls = streak >= required ? "mg-good" : (streak > 0 ? "mg-mid" : "mg-low");
+      }
+      rows += `<div class="mg-cell ${cls}"></div>`;
+    });
+    rows += `</div>`;
+  });
+  return `<div class="card">
+    <div style="font-weight:700;margin-bottom:4px">${esc(meta.label)} mastery map</div>
+    <div class="muted" style="margin-bottom:10px">&#128993; green = mastered &middot; gold = building a streak &middot; red = missed last time &middot; gray = not tried yet</div>
+    <div class="mg-grid">${rows}</div>
+  </div>`;
+}
+function renderStatsCardHtml(cat) {
+  const meta = catMeta(cat);
+  const cs = data.categoryStats[cat];
+  if (!cs || !cs.attempts) {
+    return `<div class="card"><div style="font-weight:700;margin-bottom:6px">${esc(meta.label)}</div><div class="muted">No attempts yet — this category doesn't have a fixed set of facts, so progress shows up here as an overall accuracy once it's been practiced.</div></div>`;
+  }
+  const acc = Math.round(100 * cs.correct / cs.attempts);
+  return `<div class="card">
+    <div style="font-weight:700;margin-bottom:6px">${esc(meta.label)}</div>
+    <div style="font-size:34px;font-weight:800;color:var(--accent)">${acc}%</div>
+    <div class="muted">${cs.correct} of ${cs.attempts} correct &middot; last practiced ${new Date(cs.lastSeen).toLocaleDateString()}</div>
+  </div>`;
+}
+// Subgroup mastery card (prototype: rounding). Each subgroup is its own
+// streak-to-mastery, shown as a simple labeled list rather than a 2D grid —
+// there's no row/column fact space here, just a handful of named buckets.
+function renderSubgroupHtml(cat) {
+  const meta = catMeta(cat);
+  const subs = subgroupList(cat);
+  const rows = subs.map(s => {
+    const req = subgroupRequired(cat, s.id);
+    const cell = data.subgroupMastery[`${cat}::${s.id}`] || { streak: 0, attempts: 0 };
+    const streak = cell.streak || 0;
+    const mastered = streak >= req;
+    const chipStyle = mastered ? "background:var(--green-soft);color:var(--green-dark)" : "";
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line)">
+      <span style="font-weight:600">${esc(s.label)}</span>
+      <span class="chip" style="${chipStyle}">${mastered ? "&#127942; mastered" : `${streak}/${req} streak`}</span>
+    </div>`;
+  }).join("");
+  return `<div class="card">
+    <div style="font-weight:700;margin-bottom:4px">${esc(meta.label)} groupings</div>
+    <div class="muted" style="margin-bottom:10px">Each subcategory has its own correct-in-a-row goal (set on the Mastery tab) to be marked mastered. A miss cuts that subcategory's streak in half rather than back to zero.</div>
+    ${rows}
+  </div>`;
+}
+// Picks the right progress widget for a category: 2D heatmap for a bounded
+// fact space, a subgroup chip list where one's defined (rounding today),
+// otherwise the plain accuracy stats card.
+function renderCategoryBodyHtml(cat) {
+  if (GRID_CATS[cat]) return renderGridHtml(cat);
+  if (subgroupList(cat).length) return renderSubgroupHtml(cat);
+  return renderStatsCardHtml(cat);
+}
+
+// ---------- Kid-facing progress view ----------
+function renderProgress() {
+  const focus = activeFocus();
+  const mixed = isMixedFocus(focus);
+  const cat = focusCategories(focus)[0];
+  const body = mixed
+    ? `<div class="card"><div class="muted">This focus mixes a few categories, so it doesn't have its own progress map — check "My Progress" from a single-category focus to see one.</div></div>`
+    : renderCategoryBodyHtml(cat);
+  const streakHtml = data.streakDays > 0
+    ? `<div class="card center streak-card"><div style="font-size:30px">${"&#128293;".repeat(Math.min(data.streakDays,5))}</div><div style="font-weight:700;font-size:18px;margin-top:4px">${data.streakDays}-day streak!</div></div>`
+    : "";
+  const focusCats = focusCategories(focus);
+  const graduatedCount = data.graduated.filter(g => focusCats.includes(g.category)).length;
+  app.innerHTML = `
+    ${streakHtml}
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:10px">${esc(focus.name)}</div>
+      ${mixed ? "" : renderProgressBarHtml(cat, false)}
+    </div>
+    <div class="card center"><div style="font-weight:700;font-size:18px">&#127942; ${graduatedCount} fact${graduatedCount===1?"":"s"} mastered</div></div>
+    ${body}
+    <div class="center" style="margin-top:6px"><button class="big outline" onclick="go('home')">Back</button></div>`;
+}
+
+// ---------- Session ----------
+let S = null;
+// v6 §1.1: single tracked handle for the session's one in-flight deferred
+// callback (Drill auto-advance or Practice wrong-answer re-render). Every
+// setTimeout in the session loop routes through here so it can be cancelled
+// by a new answer or a navigation, instead of firing against stale state.
+let sessionTimer = null;
+function clearSessionTimer() {
+  if (sessionTimer !== null) { clearTimeout(sessionTimer); sessionTimer = null; }
+}
+function cheers() {
+  const n = data.childName;
+  return [
+    `You can do it, ${n}! &#128170;`,
+    "Get ready to sharpen those math skills!",
+    "Take a deep breath — you've got this! &#127775;",
+    "Every problem you try makes your brain stronger!",
+    "Focus up — let's go! &#128640;",
+    "Believe in yourself — we do!",
+    "One problem at a time. You're going to shine! &#10024;",
+    "Mistakes are how we learn. Let's go!",
+  ];
+}
+function startSession(mode) {
+  const focus = activeFocus();
+  const cats = focusCategories(focus);
+  const len = data.drillLength || 12;
+  const reviewPool = data.reviewFacts.filter(r => cats.includes(r.category));
+  const reviewCap = Math.floor(len * (data.reviewBankPercent || 50) / 100);
+  const reviewCount = Math.min(reviewCap, reviewPool.length);
+  const reviewItems = shuffle(reviewPool).slice(0, reviewCount).map(r => ({ ...r, fromReview: true }));
+  const freshCount = Math.max(len - reviewItems.length, 1);
+  const usedKeys = new Set(reviewItems.map(it => it.key));
+  // For a mixed focus, pick a random category per fresh problem so the
+  // session is a genuine shuffle across categories, not one after another.
+  const freshItems = Array.from({ length: freshCount }, () => buildUniqueProblem(cats[randInt(0, cats.length - 1)], usedKeys));
+  const queue = orderNoAdjacentAnswers([...freshItems, ...reviewItems]);
+  S = { mode, queue, idx: 0, attempts: 0, results: [], focusName: focus.name, categories: cats, typed: "", typedQ: "", typedR: "", activeField: "q", startTime: null };
+  const C = cheers();
+  const cheer = C[Math.floor(Math.random() * C.length)];
+  const label = mode === "drill" ? "&#9201;&#65039; Drill time" : "&#127919; Practice time";
+  app.innerHTML = `
+    <div class="card center" style="padding:40px">
+      <div style="font-size:14px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:8px">${label}</div>
+      <h2 style="margin:0 0 6px;font-weight:800;font-size:26px">${esc(focus.name)}</h2>
+      <div class="muted" style="margin-bottom:20px">${queue.length} problems today</div>
+      <div style="background:var(--soft);border-radius:14px;padding:16px 20px;font-size:19px;font-weight:600;margin-bottom:26px">${cheer}</div>
+      <button class="big green" onclick="beginSession()">Let's start! &rarr;</button>
+    </div>`;
+}
+function beginSession() { S.startTime = Date.now(); renderProblem(); }
+
+function resetTyped() { S.typed = ""; S.typedQ = ""; S.typedR = ""; S.activeField = "q"; }
+
+function renderProblem(state) {
+  if (!S) return; // navigation happened before this deferred callback fired
+  const p = S.queue[S.idx];
+  const fb = state || "";
+  const locked = fb === "correct" || fb === "wrong-locked" || fb === "reveal";
+  const isDrill = S.mode === "drill";
+
+  let widgetHtml = "";
+  if (p.type === "comparison") {
+    widgetHtml = `
+      <div id="numDisplay" style="max-width:280px">${esc(p.prompt)}</div>
+      <div class="cmp-row">
+        <button ${locked?"disabled":""} onclick="submitCompare('<')">&lt;</button>
+        <button ${locked?"disabled":""} onclick="submitCompare('=')">=</button>
+        <button ${locked?"disabled":""} onclick="submitCompare('&gt;')">&gt;</button>
+      </div>`;
+  } else if (p.type === "numeric2") {
+    widgetHtml = `
+      <div style="font-size:24px;font-weight:700;text-align:center;margin-bottom:14px">${p.prompt}</div>
+      <div class="num2wrap">
+        <div class="num2field ${S.activeField==='q'?'active':''}" onclick="setField('q')"><div class="lbl">Quotient</div><div style="font-size:28px;font-weight:700">${esc(S.typedQ||"&nbsp;")}</div></div>
+        <div class="num2field ${S.activeField==='r'?'active':''}" onclick="setField('r')"><div class="lbl">Remainder</div><div style="font-size:28px;font-weight:700">${esc(S.typedR||"&nbsp;")}</div></div>
+      </div>
+      ${numpadHtml(locked)}`;
+  } else {
+    widgetHtml = `
+      <div style="font-size:24px;font-weight:700;text-align:center;margin-bottom:14px">${p.prompt}</div>
+      <div id="numDisplay" class="${isDrill ? "" : (fb==="correct"?"ok":fb==="wrong"?"bad":"")}">${esc(S.typed || "\u00A0")}</div>
+      ${numpadHtml(locked)}`;
+  }
+
+  app.innerHTML = `
+    <div class="card" style="padding:32px">
+      <div style="display:flex;justify-content:space-between;font-size:14px;color:var(--muted);margin-bottom:20px">
+        <span>${isDrill?"Drill":"Practice"} &middot; problem ${S.idx+1} of ${S.queue.length}</span>
+        ${p.fromReview ? '<span class="assigned-badge">review</span>' : ""}
+      </div>
+      ${widgetHtml}
+      <div class="feedback">${
+        isDrill && (fb==="correct"||fb==="wrong-locked") ? '<span style="color:var(--muted)">&#10004;&#65039; Answer saved. On to the next one!</span>' :
+        fb==="correct" ? '<span style="color:var(--green)">&#9989; Yes! That\'s it!</span>' :
+        fb==="wrong" ? '<span style="color:var(--danger)">Not quite — give it another try. You\'ve got this!</span>' :
+        fb==="reveal" ? `<span style="color:var(--accent)">Answer: ${p.type==="numeric2" ? `${p.answer.q} r${p.answer.r}` : esc(String(p.answer))}</span>` : ""
+      }</div>
+      ${p.type !== "comparison" ? `
+      <div class="row" style="margin-top:10px;justify-content:center">
+        ${locked
+          ? (isDrill ? "" : '<button class="big green" onclick="nextProblem()">Next &rarr;</button>')
+          : `<button class="big" onclick="submitNumeric()">Check it</button>
+             ${!isDrill && S.attempts >= 2 ? '<button class="outline" onclick="revealAnswer()">Show me the answer</button>' : ""}`}
+      </div>` : (locked && !isDrill ? `<div class="center" style="margin-top:10px"><button class="big green" onclick="nextProblem()">Next &rarr;</button></div>` : "")}
+    </div>`;
+}
+
+function numpadHtml(locked) {
+  const rows = [["7","8","9"],["4","5","6"],["1","2","3"]];
+  return `<div class="numpad">
+    ${rows.map(row => row.map(d => `<button ${locked?"disabled":""} onclick="kbType('${d}')">${d}</button>`).join("")).join("")}
+    <button ${locked?"disabled":""} onclick="kbBack()">&#9003;</button>
+    <button ${locked?"disabled":""} onclick="kbType('0')">0</button>
+    <button class="wide" ${locked?"disabled":""} onclick="kbClear()">clear</button>
+  </div>`;
+}
+function setField(f) { S.activeField = f; renderProblem(); }
+function kbType(d) {
+  const p = S.queue[S.idx];
+  if (p.type === "numeric2") {
+    if (S.activeField === "q") S.typedQ = (S.typedQ||"") + d; else S.typedR = (S.typedR||"") + d;
+  } else {
+    S.typed = (S.typed||"") + d;
+  }
+  renderProblem();
+}
+function kbBack() {
+  const p = S.queue[S.idx];
+  if (p.type === "numeric2") {
+    if (S.activeField === "q") S.typedQ = (S.typedQ||"").slice(0,-1); else S.typedR = (S.typedR||"").slice(0,-1);
+  } else {
+    S.typed = (S.typed||"").slice(0,-1);
+  }
+  renderProblem();
+}
+function kbClear() {
+  const p = S.queue[S.idx];
+  if (p.type === "numeric2") { S.typedQ = ""; S.typedR = ""; } else { S.typed = ""; }
+  renderProblem();
+}
+
+function checkAnswer(p, given) {
+  if (p.type === "numeric2") return Number(given.q) === Number(p.answer.q) && Number(given.r) === Number(p.answer.r);
+  if (p.type === "comparison") return given === p.answer;
+  return Number(given) === Number(p.answer);
+}
+function submitNumeric() {
+  const p = S.queue[S.idx];
+  let given;
+  if (p.type === "numeric2") {
+    if (!S.typedQ || !S.typedR) return;
+    given = { q: S.typedQ, r: S.typedR };
+  } else {
+    if (!S.typed) return;
+    given = S.typed;
+  }
+  handleAnswer(p, given);
+}
+function submitCompare(sym) {
+  const p = S.queue[S.idx];
+  if (S.attempts === undefined) S.attempts = 0;
+  handleAnswer(p, sym);
+}
+function handleAnswer(p, given) {
+  clearSessionTimer(); // any new answer supersedes a pending callback
+  const correct = checkAnswer(p, given);
+  S.attempts++;
+  const rec = { key: p.key, category: p.category, subgroup: p.subgroup, prompt: p.prompt, answer: p.answer, type: p.type, fromReview: !!p.fromReview };
+  if (S.mode === "drill") {
+    S.results.push({ ...rec, correct, attempts: 1 });
+    resetTyped();
+    renderProblem(correct ? "correct" : "wrong-locked");
+    sessionTimer = setTimeout(nextProblem, 900);
+  } else {
+    if (correct) {
+      S.results.push({ ...rec, correct: true, attempts: S.attempts });
+      resetTyped();
+      renderProblem("correct");
+    } else {
+      resetTyped();
+      renderProblem("wrong");
+      sessionTimer = setTimeout(() => renderProblem(), 1300);
+    }
+  }
+}
+function revealAnswer() {
+  const p = S.queue[S.idx];
+  S.results.push({ key: p.key, category: p.category, subgroup: p.subgroup, prompt: p.prompt, answer: p.answer, type: p.type, fromReview: !!p.fromReview, correct: false, attempts: S.attempts });
+  renderProblem("reveal");
+}
+function nextProblem() {
+  clearSessionTimer();
+  if (!S) return; // navigation happened before this deferred callback fired
+  S.idx++; S.attempts = 0; resetTyped();
+  if (S.idx >= S.queue.length) return finishSession();
+  renderProblem();
+}
+
+function finishSession() {
+  const total = S.results.length;
+  const correct = S.results.filter(r => r.correct).length;
+  const elapsedMs = S.startTime ? (Date.now() - S.startTime) : null;
+  const session = { id: Date.now(), date: new Date().toISOString(), mode: S.mode, categories: S.categories, focusName: S.focusName, results: S.results, score: correct, total, elapsedMs };
+  data.sessions.push(session);
+  // Mastery bookkeeping (masteryGrid, categoryStats, review pool, graduation)
+  // is Drill-only. Practice allows retries until correct, which is great for
+  // low-stakes rehearsal but isn't a real signal of mastery — only a clean,
+  // one-shot Drill answer should move the needle here.
+  if (S.mode === "drill") {
+    S.results.forEach(r => {
+      const rc = gridRowCol(r.category, r);
+      if (rc) {
+        const gk = `${r.category}::${rc[0]}-${rc[1]}`;
+        const cell = data.masteryGrid[gk] || { attempts: 0, correct: 0, streak: 0 };
+        cell.attempts++;
+        if (r.correct) { cell.correct++; cell.streak = (cell.streak||0) + 1; } else { cell.streak = 0; }
+        cell.lastSeen = new Date().toISOString();
+        data.masteryGrid[gk] = cell;
+      }
+      const cs = data.categoryStats[r.category] || { attempts: 0, correct: 0 };
+      cs.attempts++; if (r.correct) cs.correct++;
+      cs.lastSeen = new Date().toISOString();
+      data.categoryStats[r.category] = cs;
+
+      // Subgroup mastery (prototype: rounding). A miss halves the streak
+      // instead of zeroing it — these are freshly-generated random problems,
+      // not a specific fact, so one slip shouldn't erase 29 good answers.
+      if (r.subgroup && subgroupMeta(r.category, r.subgroup)) {
+        const sgKey = `${r.category}::${r.subgroup}`;
+        const sgCell = data.subgroupMastery[sgKey] || { streak: 0, attempts: 0, correct: 0 };
+        sgCell.attempts++;
+        if (r.correct) { sgCell.correct++; sgCell.streak = (sgCell.streak || 0) + 1; }
+        else { sgCell.streak = Math.floor((sgCell.streak || 0) / 2); }
+        sgCell.lastSeen = new Date().toISOString();
+        data.subgroupMastery[sgKey] = sgCell;
+      }
+
+      if (r.fromReview) {
+        const rf = data.reviewFacts.find(x => x.key === r.key && x.category === r.category);
+        if (rf) {
+          if (r.correct && r.attempts === 1) rf.streak = (rf.streak||0) + 1; else rf.streak = 0;
+          if ((rf.streak||0) >= masteryRequiredFor(r.category, r.subgroup)) {
+            data.reviewFacts = data.reviewFacts.filter(x => x !== rf);
+            data.graduated.push({
+              key: rf.key, category: rf.category, subgroup: rf.subgroup, date: new Date().toISOString(),
+              prompt: rf.prompt, answer: rf.answer, type: rf.type,
+              sessionsAtGraduation: countCategorySessions(data, rf.category),
+            });
+          }
+        }
+      } else if (!r.correct && GRID_CATS[r.category]) {
+        // Only bounded-fact-space categories keep a per-fact review pool.
+        if (!data.reviewFacts.some(x => x.key === r.key && x.category === r.category)) {
+          data.reviewFacts.push({ key: r.key, category: r.category, subgroup: r.subgroup, prompt: r.prompt, answer: r.answer, type: r.type, streak: 0 });
+        }
+      }
+    });
+    // Resurfacing: a graduated fact re-enters the review pool after N Drill
+    // sessions in that category, since math fluency decays in a way spelling
+    // doesn't. Facts graduated before this feature existed have no saved
+    // prompt/answer to resurface safely, so they're grandfathered as
+    // permanently graduated.
+    const stillGraduated = [];
+    data.graduated.forEach(g => {
+      if (g.resurfaceEligible === false) { stillGraduated.push(g); return; }
+      const sessionsSince = countCategorySessions(data, g.category) - (g.sessionsAtGraduation || 0);
+      if (sessionsSince >= resurfaceAfterFor(g.category)) {
+        data.reviewFacts.push({ key: g.key, category: g.category, subgroup: g.subgroup, prompt: g.prompt, answer: g.answer, type: g.type, streak: 0 });
+      } else {
+        stillGraduated.push(g);
+      }
+    });
+    data.graduated = stillGraduated;
+  }
+  // Consecutive-day streak tracking (practice cadence, not fact mastery —
+  // counts for either mode)
+  const todayStr = new Date().toISOString().slice(0,10);
+  if (data.lastPracticeDate !== todayStr) {
+    if (data.lastPracticeDate) {
+      const diffDays = Math.round((new Date(todayStr) - new Date(data.lastPracticeDate)) / 86400000);
+      data.streakDays = diffDays === 1 ? (data.streakDays || 0) + 1 : 1;
+    } else {
+      data.streakDays = 1;
+    }
+    data.lastPracticeDate = todayStr;
+  }
+  const saved = persist();
+  app.innerHTML = `
+    ${saved ? "" : `<div class="card" style="background:var(--gold-soft);border:2px solid var(--gold)">
+      <div style="font-weight:700;margin-bottom:4px">&#9888;&#65039; This session couldn't be saved</div>
+      <div class="muted" style="font-size:14px">The score below is real, but the device may be low on storage, so it wasn't saved to history or results. Freeing up some space and trying again should fix it.</div>
+    </div>`}
+    <div class="card center" style="padding:40px">
+      <div style="font-size:46px;margin-bottom:8px">${S.mode==="drill"?"&#127775;":"&#127881;"}</div>
+      <h2 style="margin:0 0 8px;font-weight:800">Great work, ${esc(data.childName)}!</h2>
+      <div style="font-size:34px;font-weight:800">${session.score} / ${session.total}</div>
+      <div class="muted" style="margin-top:4px">${session.score===session.total ? "A perfect round! &#127775;" : "Every try makes you stronger — keep going!"}</div>
+      <div style="margin-top:24px"><button class="big" onclick="go('home')">Done</button></div>
+    </div>`;
+}
+
+// ---------- Parent dashboard ----------
+let selectedFocusId = null;
+let selectedResultsFilter = "overview";
+let selectedMasteryCat = null;
+function renderParent(view) {
+  if (!parentUnlocked) return parentGate();
+  let html = `<div class="row" style="margin-bottom:16px">
+    <button class="${view==="focus"?"":"outline"}" onclick="renderParent('focus')">Focus areas</button>
+    <button class="${view==="schedule"?"":"outline"}" onclick="renderParent('schedule')">Schedule</button>
+    <button class="${view==="results"?"":"outline"}" onclick="renderParent('results')">Results</button>
+    <button class="${view==="mastery"?"":"outline"}" onclick="renderParent('mastery')">Mastery</button>
+    <button class="${view==="settings"?"":"outline"}" onclick="renderParent('settings')">Settings</button>
+    <button class="outline" onclick="exportCSV()">Export CSV</button>
+  </div>`;
+
+  if (view === "schedule") {
+    const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    const todayIdx = new Date().getDay();
+    html += `<div class="card">
+      <div style="font-weight:700;margin-bottom:4px">Weekly schedule</div>
+      <div class="muted" style="margin-bottom:14px">Uncheck an activity to gray out that button for the day. (Per-day focus-area switching is coming in a later update — right now every day uses the assigned focus area.)</div>
+      ${days.map((d,i) => {
+        const s = data.schedule[i];
+        return `<div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--line);flex-wrap:wrap">
+          <span style="min-width:100px;font-weight:${i===todayIdx?800:600}">${d}${i===todayIdx?" &larr; today":""}</span>
+          <label style="padding:0"><input type="checkbox" ${s.practiceEnabled?"checked":""} onchange="setSched(${i},'practiceEnabled',this.checked)"> Practice</label>
+          <label style="padding:0"><input type="checkbox" ${s.drillEnabled?"checked":""} onchange="setSched(${i},'drillEnabled',this.checked)"> Drill</label>
+        </div>`;
+      }).join("")}
+    </div>`;
+  } else if (view === "settings") {
+    const grades = ["K","1","2","3","4","5","6","7"];
+    html += `<div class="card">
+      <div style="font-weight:700;margin-bottom:10px">Settings</div>
+      <label style="padding:6px 0"><input type="checkbox" ${data.showHistory?"checked":""} onchange="setSetting('showHistory',this.checked)"> Show "My History" button to ${esc(data.childName)}</label>
+      <label style="padding:6px 0"><input type="checkbox" ${data.allowChildFocusSwitch?"checked":""} onchange="setSetting('allowChildFocusSwitch',this.checked)"> Let ${esc(data.childName)} switch their own focus area from the home screen</label>
+      <div class="muted" style="margin-left:24px;margin-bottom:4px">${esc(data.childName)} can only choose among focus areas you've already created below — they can't create or delete any.</div>
+      <div style="margin-top:14px;font-weight:600">Grade level</div>
+      <div class="row" style="margin-top:6px">
+        ${grades.map(g => `<button class="${data.gradeLevel===g?"":"outline"}" style="width:44px;padding:8px 0" onclick="setSetting('gradeLevel','${g}')">${g}</button>`).join("")}
+      </div>
+      <div style="margin-top:18px;font-weight:600">Drill length (problems per session)</div>
+      <input type="number" min="5" max="30" value="${data.drillLength}" style="max-width:120px" onchange="setSetting('drillLength', Math.max(5,Math.min(30,Number(this.value)||12)))">
+      <div style="margin-top:18px;font-weight:600">Review bank size (% of each session)</div>
+      <div class="muted" style="margin-bottom:4px">How much of each Practice/Drill can come from missed facts due for review, when enough are available. The rest comes from new problems.</div>
+      <input type="number" min="10" max="70" value="${data.reviewBankPercent}" style="max-width:120px" onchange="setSetting('reviewBankPercent', Math.max(10,Math.min(70,Number(this.value)||50)))">
+      <div class="muted" style="margin-top:18px">Looking for "correct-in-a-row to master a fact" or resurfacing settings? Those now live per-category on the <button class="link" style="padding:0;font-size:13px" onclick="renderParent('mastery')">Mastery tab</button>.</div>
+      <div style="margin-top:18px;font-weight:600">Child's display name</div>
+      <input type="text" id="renameIn" value="${esc(data.childName)}" style="max-width:280px">
+      <button class="outline" onclick="renameChild()">Save name</button>
+      <div style="margin-top:18px" class="row">
+        <button class="outline" onclick="changePin()">Change PIN</button>
+        <button class="outline" onclick="renderSetup(1)">Add another child on this device</button>
+      </div>
+      <div class="muted" style="margin-top:18px">This device keeps the most recent 300 sessions to stay fast on older devices. Use Export CSV above to save the full history somewhere permanent.</div>
+    </div>
+    <div class="card" style="border:2px solid var(--danger)">
+      <div style="font-weight:700;margin-bottom:4px;color:var(--danger)">Danger zone</div>
+      <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:600">Reset progress</div>
+          <div class="muted" style="font-size:13px">Clears all sessions, review facts, mastery, and streaks for ${esc(data.childName)}. Keeps their name, PIN, focus areas, schedule, and settings.</div>
+        </div>
+        <button class="outline" style="border-color:var(--danger);color:var(--danger)" onclick="resetProfile()">Reset progress&hellip;</button>
+      </div>
+      <div style="margin-top:16px;padding-top:16px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">
+        <div>
+          <div style="font-weight:600">Delete profile</div>
+          <div class="muted" style="font-size:13px">Permanently removes ${esc(data.childName)}'s entire profile from this device, including settings and PIN.</div>
+        </div>
+        <button class="outline" style="border-color:var(--danger);color:var(--danger)" onclick="deleteProfile()">Delete profile&hellip;</button>
+      </div>
+    </div>
+    <div class="muted center" style="font-size:12px;margin-top:4px">Math Star ${APP_VERSION}</div>`;
+  } else if (view === "mastery") {
+    if (!selectedMasteryCat || !CATS.some(c => c.id === selectedMasteryCat)) selectedMasteryCat = CATS[0].id;
+    const cat = selectedMasteryCat;
+    const meta = catMeta(cat);
+    const hasSubgroups = subgroupList(cat).length > 0;
+    const reqOverride = data.categoryMasteryRequired[cat];
+    const resurfOverride = data.categoryResurfaceAfterSessions[cat];
+
+    html += `<div class="card">
+      <div style="font-weight:700;margin-bottom:4px">Mastery defaults</div>
+      <div class="muted" style="margin-bottom:14px">Used by any category below that hasn't been given its own setting. Doesn't apply to categories with subcategories (like Rounding) — those set a goal per subcategory further down. Applies only to Drill answers — Practice never affects mastery status.</div>
+      <div class="row" style="gap:28px">
+        <div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px">Correct-in-a-row to master a fact</div>
+          <input type="number" min="2" max="10" value="${data.masteryStreakRequired}" style="max-width:110px" onchange="setSetting('masteryStreakRequired', Math.max(2,Math.min(10,Number(this.value)||3)), 'mastery')">
+        </div>
+        <div>
+          <div style="font-weight:600;font-size:14px;margin-bottom:4px">Resurface after (sessions)</div>
+          <input type="number" min="3" max="30" value="${data.resurfaceAfterSessions}" style="max-width:110px" onchange="setSetting('resurfaceAfterSessions', Math.max(3,Math.min(30,Number(this.value)||10)), 'mastery')">
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <div style="font-weight:700;margin-bottom:10px">Per-category overrides</div>
+      <select onchange="selectMasteryCat(this.value)">
+        ${CATS.map(c => `<option value="${c.id}" ${c.id===cat?"selected":""}>${esc(c.label)}</option>`).join("")}
+      </select>
+      <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--line)">
+        <div style="font-weight:700;margin-bottom:2px">${esc(meta.label)}</div>
+        <div style="max-width:280px;margin:6px 0 16px">${renderProgressBarHtml(cat, true)}</div>
+
+        ${hasSubgroups ? `
+        <div style="font-weight:600;margin-bottom:4px">Subcategory streak goals</div>
+        <div class="muted" style="margin-bottom:10px">${esc(meta.label)} is split into subcategories, and every fact belongs to one of them — so the correct-in-a-row goal is set per subcategory below rather than for ${esc(meta.label)} as a whole. This also controls how many first-try-correct in a row masters each subcategory's grouping; a miss cuts that subcategory's streak in half instead of back to zero.</div>
+        ${subgroupList(cat).map(s => `
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--line)">
+            <span>${esc(s.label)}</span>
+            <input type="number" min="5" max="60" value="${subgroupRequired(cat, s.id)}" style="max-width:90px" onchange="setSubgroupRequired('${cat}', '${s.id}', Math.max(5,Math.min(60,Number(this.value)||30)))">
+          </div>`).join("")}
+        ` : `
+        <label style="padding:0 0 8px"><input type="checkbox" ${reqOverride!==undefined?"checked":""} onchange="toggleMasteryOverride('${cat}',this.checked)"> Custom correct-in-a-row goal for this category</label>
+        ${reqOverride!==undefined ? `<div style="margin:2px 0 16px"><input type="number" min="2" max="10" value="${reqOverride}" style="max-width:110px" onchange="setCategoryMasteryRequired('${cat}', Math.max(2,Math.min(10,Number(this.value)||3)))"></div>` : ""}
+        `}
+
+        <label style="padding:0 0 8px;margin-top:${hasSubgroups?"14":"0"}px"><input type="checkbox" ${resurfOverride!==undefined?"checked":""} onchange="toggleResurfaceOverride('${cat}',this.checked)"> Custom resurface-after for this category</label>
+        ${resurfOverride!==undefined ? `<div style="margin:2px 0 16px"><input type="number" min="3" max="30" value="${resurfOverride}" style="max-width:110px" onchange="setCategoryResurfaceAfter('${cat}', Math.max(3,Math.min(30,Number(this.value)||10)))"></div>` : ""}
+      </div>
+    </div>`;
+  } else if (view === "results") {
+    if (selectedResultsFilter !== "overview" && !data.focusAreas.some(f => f.id === selectedResultsFilter)) {
+      selectedResultsFilter = "overview";
+    }
+    const isOverview = selectedResultsFilter === "overview";
+    const selFocus = isOverview ? null : data.focusAreas.find(f => f.id === selectedResultsFilter);
+    const filterCats = isOverview ? null : focusCategories(selFocus);
+    const mixed = !isOverview && filterCats.length > 1;
+
+    html += `<div class="card">
+      <div style="font-weight:700;margin-bottom:8px">Viewing</div>
+      <select onchange="selectResultsFilter(this.value)">
+        <option value="overview" ${isOverview?"selected":""}>Overview (all focus areas)</option>
+        ${data.focusAreas.map(f => `<option value="${f.id}" ${f.id===selectedResultsFilter?"selected":""}>${esc(f.name)}</option>`).join("")}
+      </select>
+    </div>`;
+
+    // 1. Mastery (skipped for a mixed-category focus — no single category to map)
+    if (isOverview) {
+      html += `<div class="card"><div style="font-weight:700;margin-bottom:8px">Mastery</div>${renderMasteryOverviewHtml()}</div>`;
+    } else if (!mixed) {
+      const filterCat = filterCats[0];
+      html += `<div class="card"><div style="font-weight:700;margin-bottom:8px">Mastery</div>${renderProgressBarHtml(filterCat, true)}</div>`;
+      html += renderCategoryBodyHtml(filterCat);
+    } else {
+      html += `<div class="card"><div class="muted">This focus mixes multiple categories, so a combined mastery view isn't shown here. Each category still tracks its own mastery under its single-category focus (or the Overview above).</div></div>`;
+    }
+
+    // 2. Review Questions
+    const reviewFacts = isOverview ? data.reviewFacts : data.reviewFacts.filter(r => filterCats.includes(r.category));
+    const graduated = isOverview ? data.graduated : data.graduated.filter(g => filterCats.includes(g.category));
+    if (reviewFacts.length || graduated.length) {
+      html += `<div class="card">`;
+      if (reviewFacts.length) {
+        html += `<div style="font-weight:700;margin-bottom:2px">Facts in review (mixed into sessions, never scored against)</div>
+        <div class="muted" style="margin-bottom:6px">Dots show progress toward graduation (first-try correct in a row — the goal varies by category and subcategory; see the Mastery tab).</div>
+        ${reviewFacts.map(r => { const st=r.streak||0; const req=masteryRequiredFor(r.category, r.subgroup); return `<span class="chip">${esc(r.prompt)} <span style="color:var(--green);letter-spacing:.1em">${"&#9679;".repeat(st)}${"&#9675;".repeat(Math.max(0,req-st))}</span></span>`; }).join("")}`;
+      }
+      if (graduated.length) {
+        html += `<div style="font-weight:700;margin:12px 0 6px;color:var(--green)">&#127891; Graduated facts</div>
+        ${graduated.map(g => {
+          let sub = "";
+          if (g.resurfaceEligible === false) {
+            sub = "";
+          } else {
+            const remaining = Math.max(0, resurfaceAfterFor(g.category) - (countCategorySessions(data, g.category) - (g.sessionsAtGraduation||0)));
+            sub = ` <span class="muted" style="font-size:11px">&middot; resurfaces in ${remaining}</span>`;
+          }
+          return `<span class="chip" style="background:var(--green-soft)">${esc(g.key)} <span class="muted" style="font-size:12px">${new Date(g.date).toLocaleDateString()}</span>${sub}</span>`;
+        }).join("")}`;
+      }
+      html += `</div>`;
+    } else {
+      html += `<div class="card"><div class="muted">No facts currently in review${isOverview ? "" : ` for ${esc(selFocus.name)}`}.</div></div>`;
+    }
+
+    // 3. Session History
+    const sessions = (isOverview ? [...data.sessions] : data.sessions.filter(s => (s.categories || [s.category]).some(c => filterCats.includes(c)))).reverse();
+    html += `<div class="card"><div style="font-weight:700;margin-bottom:10px">Session history</div>`;
+    if (!sessions.length) html += `<div class="muted">No sessions yet.</div>`;
+    sessions.forEach(s => {
+      const dur = formatDuration(s.elapsedMs);
+      html += `<details><summary><strong>${s.mode==="drill"?"Drill":"Practice"}</strong> &middot; ${esc(sessionCategoryLabel(s))} &middot; ${new Date(s.date).toLocaleString()} &middot; ${s.score}/${s.total}${dur?` &middot; ${dur}`:""}</summary>
+        <div style="font-size:14px;padding-top:6px;color:var(--body-text)">
+        ${s.results.map(r => `<div>${r.correct?"&#9989;":"&#10060;"} ${esc(r.prompt)}</div>`).join("")}
+        <div style="margin-top:8px"><button class="danger" onclick="deleteSession(${s.id})">Delete this session</button></div>
+        </div></details>`;
+    });
+    html += `</div>`;
+  } else {
+    if (!selectedFocusId || !data.focusAreas.some(f => f.id === selectedFocusId)) selectedFocusId = data.activeFocusId;
+    html += `<div class="card">
+      <div style="font-weight:700;margin-bottom:10px">Focus areas</div>
+      ${data.focusAreas.map(f => `
+        <div style="display:flex;align-items:center;gap:10px;padding:6px 0;flex-wrap:wrap">
+          <button class="${f.id===selectedFocusId?"":"outline"}" onclick="selectFocus('${f.id}')">${esc(f.name)}</button>
+          <span class="muted">${esc(focusCategoryLabel(f))}</span>
+          ${f.id===data.activeFocusId
+            ? '<span class="assigned-badge">ASSIGNED</span>'
+            : `<button class="link" onclick="assignFocus('${f.id}')">assign this focus</button>`}
+          ${data.focusAreas.length>1 && f.id!==data.activeFocusId ? `<button class="link" style="color:var(--danger)" onclick="deleteFocus('${f.id}')">delete</button>` : ""}
+        </div>`).join("")}
+      <div style="margin-top:14px">
+        <input type="text" id="newFocusName" placeholder="Focus area name (e.g., Mixed review)" style="max-width:320px">
+        <div class="muted" style="margin:8px 0 4px">Pick one category, or several for mixed review practice:</div>
+        <div style="max-height:220px;overflow-y:auto;border:2px solid var(--border);border-radius:10px;padding:8px 12px;max-width:320px;background:var(--input-bg)">
+          ${CATS.map(c => `<label style="padding:3px 0;font-size:14px;font-weight:400"><input type="checkbox" class="newFocusCatChk" value="${c.id}"> ${esc(c.label)} (${c.band})</label>`).join("")}
+        </div>
+        <button onclick="createFocus()" style="margin-top:8px">Create focus area</button>
+      </div>
+    </div>`;
+  }
+  app.innerHTML = html;
+}
+function selectResultsFilter(id) { selectedResultsFilter = id; renderParent("results"); }
+function hasCategoryActivity(cat) {
+  if (data.categoryStats[cat] && data.categoryStats[cat].attempts > 0) return true;
+  if (GRID_CATS[cat]) return Object.keys(data.masteryGrid).some(k => k.startsWith(cat + "::"));
+  return false;
+}
+function renderMasteryOverviewHtml() {
+  const active = CATS.filter(c => hasCategoryActivity(c.id));
+  if (!active.length) return `<div class="muted">No categories practiced yet.</div>`;
+  return active.map(c => `
+    <div style="margin-bottom:14px">
+      <div style="font-weight:600;margin-bottom:4px;font-size:14px">${esc(c.label)}</div>
+      ${renderProgressBarHtml(c.id, true)}
+    </div>`).join("");
+}
+function exportCSV() {
+  const rows = [["child","date","time","mode","category","gradeBand","durationSec","questions","correct","percentage"]];
+  data.sessions.forEach(s => {
+    const d = new Date(s.date);
+    const durationSec = s.elapsedMs ? Math.round(s.elapsedMs / 1000) : "";
+    // Group this session's results by category (usually one, more than one
+    // for a mixed-review session) so each row is a session-category summary.
+    const byCat = {};
+    s.results.forEach(r => {
+      const cat = r.category || s.category;
+      if (!byCat[cat]) byCat[cat] = { total: 0, correct: 0 };
+      byCat[cat].total++;
+      if (r.correct) byCat[cat].correct++;
+    });
+    Object.keys(byCat).forEach(cat => {
+      const { total, correct } = byCat[cat];
+      const pct = total ? Math.round(100 * correct / total) : 0;
+      rows.push([
+        data.childName, d.toLocaleDateString(), d.toLocaleTimeString(), s.mode,
+        catMeta(cat).label, catMeta(cat).band, durationSec, total, correct, `${pct}%`,
+      ]);
+    });
+  });
+  const csv = rows.map(r => r.map(c => `"${String(c).replace(/"/g,'""')}"`).join(",")).join("\n");
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${nameToKey(data.childName).replace("mathstar-","")}-math-results.csv`;
+  a.click();
+}
+function selectFocus(id) { selectedFocusId = id; renderParent("focus"); }
+function assignFocus(id) { data.activeFocusId = id; persist(); renderParent("focus"); }
+function createFocus() {
+  const name = document.getElementById("newFocusName").value.trim();
+  const categories = Array.from(document.querySelectorAll(".newFocusCatChk:checked")).map(el => el.value);
+  if (!name || !categories.length) { alert("Give it a name and pick at least one category."); return; }
+  const id = "f" + Date.now();
+  data.focusAreas.push({ id, categories, gradeBand: catMeta(categories[0]).band, name });
+  selectedFocusId = id; persist(); renderParent("focus");
+}
+function deleteFocus(id) {
+  const f = data.focusAreas.find(x => x.id === id);
+  if (!f) return;
+  if (!confirm(`Delete the focus area "${f.name}"? Past results are kept.`)) return;
+  data.focusAreas = data.focusAreas.filter(x => x.id !== id);
+  if (selectedFocusId === id) selectedFocusId = data.activeFocusId;
+  if (selectedResultsFilter === id) selectedResultsFilter = "overview";
+  persist(); renderParent("focus");
+}
+function setSched(dayIdx, field, value) { data.schedule[dayIdx][field] = value; persist(); }
+function setSetting(field, value, view) { data[field] = value; persist(); renderParent(view || "settings"); }
+function setSubgroupRequired(cat, subId, value) {
+  if (!data.subgroupMasteryRequired[cat]) data.subgroupMasteryRequired[cat] = {};
+  data.subgroupMasteryRequired[cat][subId] = value;
+  persist(); renderParent("mastery");
+}
+function selectMasteryCat(id) { selectedMasteryCat = id; renderParent("mastery"); }
+function toggleMasteryOverride(cat, on) {
+  if (on) data.categoryMasteryRequired[cat] = data.masteryStreakRequired || 3;
+  else delete data.categoryMasteryRequired[cat];
+  persist(); renderParent("mastery");
+}
+function setCategoryMasteryRequired(cat, value) { data.categoryMasteryRequired[cat] = value; persist(); renderParent("mastery"); }
+function toggleResurfaceOverride(cat, on) {
+  if (on) data.categoryResurfaceAfterSessions[cat] = data.resurfaceAfterSessions || 10;
+  else delete data.categoryResurfaceAfterSessions[cat];
+  persist(); renderParent("mastery");
+}
+function setCategoryResurfaceAfter(cat, value) { data.categoryResurfaceAfterSessions[cat] = value; persist(); renderParent("mastery"); }
+function renameChild() {
+  const v = document.getElementById("renameIn").value.trim();
+  if (!v) { alert("Name can't be empty."); return; }
+  data.childName = v; persist(); applyTheme(); renderParent("settings");
+}
+function changePin() {
+  const cur = prompt("Enter current PIN:");
+  if (cur !== data.pin) { alert("Wrong PIN."); return; }
+  const np = prompt("New PIN (at least 4 digits):");
+  if (!np || np.trim().length < 4) { alert("PIN must be at least 4 digits."); return; }
+  data.pin = np.trim(); persist(); alert("PIN updated.");
+}
+function resetProfile() {
+  const kept = {
+    childName: data.childName, pin: data.pin, gradeLevel: data.gradeLevel,
+    showHistory: data.showHistory, allowChildFocusSwitch: data.allowChildFocusSwitch,
+    theme: data.theme, drillLength: data.drillLength,
+    focusAreas: data.focusAreas, activeFocusId: data.activeFocusId,
+    schedule: data.schedule,
+    subgroupMasteryRequired: data.subgroupMasteryRequired,
+    resurfaceAfterSessions: data.resurfaceAfterSessions,
+    masteryStreakRequired: data.masteryStreakRequired,
+    categoryMasteryRequired: data.categoryMasteryRequired,
+    categoryResurfaceAfterSessions: data.categoryResurfaceAfterSessions,
+    reviewBankPercent: data.reviewBankPercent,
+  };
+  if (!confirm(`This clears ALL of ${kept.childName}'s progress — every session, review fact, graduated fact, mastery grid, and streak — back to zero. Name, PIN, focus areas, schedule, and settings are kept. This can't be undone. Continue?`)) return;
+  // Rebuild from freshData (the single source of truth for "blank progress")
+  // and layer the settings we're keeping back on top, rather than hand-listing
+  // every progress field to blank out — matches load()'s tolerant-of-new-fields style.
+  data = Object.assign(freshData(kept.childName, kept.pin, kept.gradeLevel), kept);
+  persist();
+  applyTheme();
+  renderParent("settings");
+}
+function deleteProfile() {
+  const name = data.childName;
+  const enteredPin = prompt(`Type ${name}'s PIN to permanently delete this profile:`);
+  if (enteredPin === null) return;
+  if (enteredPin !== data.pin) { alert("Wrong PIN — nothing was deleted."); return; }
+  if (!confirm(`This permanently deletes ${name}'s entire profile — progress, settings, and PIN. This can't be undone. Continue?`)) return;
+  try { localStorage.removeItem(KEY); } catch(e) {}
+  data = null; KEY = null;
+  parentUnlocked = false;
+  if (listProfiles().length === 0) renderSetup(1);
+  else renderPicker();
+}
+function deleteSession(id) {
+  const s = data.sessions.find(x => x.id === id);
+  if (!s) return;
+  if (!confirm(`Delete this session from ${new Date(s.date).toLocaleString()}? This can't be undone.`)) return;
+  data.sessions = data.sessions.filter(x => x.id !== id);
+  persist(); renderParent("results");
+}
+
+// ---------- Boot ----------
+(function boot() {
+  const profiles = listProfiles();
+  if (profiles.length === 0) return renderSetup(1);
+  if (profiles.length === 1) { data = load(profiles[0].key); if (data) { applyTheme(); return go("home"); } }
+  renderPicker();
+})();
+</script>
+</body>
+</html>
