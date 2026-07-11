@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Resources — Star Apps</title>
+<link rel="icon" href="./icons/favicon-32.png" sizes="32x32">
+<link rel="apple-touch-icon" href="./icons/apple-touch-icon.png">
+<meta name="theme-color" content="#2A5D9F">
+<style>
+  :root {
+    --bg: #FDF6EC; --text: #2A3A50; --card: #FFFFFF; --card-shadow: rgba(42,58,80,.10);
+    --accent: #2A5D9F; --accent-soft: #E3EDF9; --green: #2E8B57; --green-soft: #DCEBDD;
+    --gold: #E8A013; --gold-soft: #FBEBC8; --muted: #6B7686; --eyebrow: #B0763A;
+    --body-text: #4A5568; --line: #EDE4D3;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; background: var(--bg); color: var(--text);
+    font-family: 'Lexend', 'Trebuchet MS', 'Comic Sans MS', sans-serif;
+  }
+  .wrap { max-width: 720px; margin: 0 auto; padding: 48px 20px 60px; }
+  .eyebrow {
+    font-size: 13px; font-weight: 600; color: var(--eyebrow); letter-spacing: .12em;
+    text-transform: uppercase; text-align: center; margin-bottom: 10px;
+  }
+  h1 { margin: 0 0 8px; font-size: 34px; font-weight: 800; text-align: center; }
+  .sub {
+    text-align: center; color: var(--body-text); font-size: 16px; max-width: 460px;
+    margin: 0 auto 40px; line-height: 1.5;
+  }
+  .back {
+    display: block; text-align: center; margin-bottom: 28px; font-size: 14px;
+    color: var(--accent); text-decoration: none; font-weight: 600;
+  }
+  .back:hover { text-decoration: underline; }
+
+  section.category {
+    background: var(--card); border-radius: 20px; padding: 24px 24px 28px;
+    box-shadow: 0 2px 10px var(--card-shadow); border: 1px solid var(--line);
+    margin-bottom: 20px;
+  }
+  .category-head { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; }
+  .icon {
+    flex: none; width: 44px; height: 44px; border-radius: 12px; display: flex;
+    align-items: center; justify-content: center; font-size: 22px; background: var(--gold-soft);
+  }
+  .category-head h2 { margin: 0; font-size: 19px; font-weight: 800; }
+  .category-head p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+
+  .grade-block { margin-bottom: 16px; }
+  .grade-block:last-child { margin-bottom: 0; }
+  .grade-block h3 {
+    margin: 0 0 8px; font-size: 14px; font-weight: 700; color: var(--accent);
+    text-transform: uppercase; letter-spacing: .04em;
+  }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .chip-row a {
+    text-decoration: none; color: var(--text); background: var(--accent-soft);
+    border-radius: 10px; padding: 8px 12px; font-size: 14px; font-weight: 600;
+    border: 1px solid var(--line);
+  }
+  .chip-row a:hover, .chip-row a:focus-visible { background: var(--gold-soft); }
+
+  .empty-note, .status-note {
+    text-align: center; color: var(--muted); font-size: 14px; padding: 8px 0;
+  }
+  footer { text-align: center; margin-top: 44px; font-size: 12px; color: var(--muted); }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <a class="back" href="./index.html">← Back to Star Apps</a>
+    <div class="eyebrow">Star Apps</div>
+    <h1>Resources</h1>
+    <p class="sub">Downloadable files that go with the apps — word lists today, more categories as they're added.</p>
+
+    <section class="category">
+      <div class="category-head">
+        <div class="icon">⭐</div>
+        <div>
+          <h2>Spelling Word Lists</h2>
+          <p>CSV files — download, then import in Spelling Star's Word Lists tab.</p>
+        </div>
+      </div>
+      <div id="spelling-lists">
+        <p class="status-note">Loading word lists…</p>
+      </div>
+    </section>
+
+    <footer>New resource categories will appear here as they're added.</footer>
+  </div>
+
+<script>
+fetch('wordlists/spelling/spelling-lists.json')
+  .then(r => {
+    if (!r.ok) throw new Error('manifest not found');
+    return r.json();
+  })
+  .then(manifest => {
+    const container = document.getElementById('spelling-lists');
+    container.innerHTML = '';
+    const grades = Object.keys(manifest).sort();
+    const anyLists = grades.some(g => manifest[g].length);
+
+    if (!anyLists) {
+      container.innerHTML = '<p class="empty-note">No word lists posted yet.</p>';
+      return;
+    }
+
+    grades.forEach(grade => {
+      const ids = manifest[grade];
+      if (!ids.length) return;
+      const block = document.createElement('div');
+      block.className = 'grade-block';
+
+      const heading = document.createElement('h3');
+      heading.textContent = grade.replace('grade', 'Grade ');
+      block.appendChild(heading);
+
+      const row = document.createElement('div');
+      row.className = 'chip-row';
+      ids.forEach(id => {
+        const a = document.createElement('a');
+        a.href = `wordlists/spelling/${grade}/Spelling_${id}.csv`;
+        a.download = '';
+        a.textContent = `List ${id}`;
+        row.appendChild(a);
+      });
+      block.appendChild(row);
+      container.appendChild(block);
+    });
+  })
+  .catch(() => {
+    document.getElementById('spelling-lists').innerHTML =
+      '<p class="status-note">Word lists failed to load. Check your connection and try again.</p>';
+  });
+</script>
+</body>
+</html>
